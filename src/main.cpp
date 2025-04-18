@@ -1,4 +1,6 @@
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <raylib.h>
 #include <raymath.h>
 #include <stdbool.h>
@@ -17,7 +19,86 @@ bool PointInCircle(Vector2 p, Vector2 circle_center, float circle_radius) {
     return distance <= circle_radius;
 }
 
+void Dilate(Image* image, int kernelSize) {
+    size_t img_memsize = sizeof(unsigned char) * image->width * image->height;
+    unsigned char* image_data = (unsigned char*) image->data;
+    unsigned char* image_copy = (unsigned char*) malloc(img_memsize);
+    memcpy(image_copy, image_data, img_memsize);
+
+    int kernelRadius = kernelSize / 2;
+
+    for (int x = kernelRadius; x < image->width - kernelRadius; x++) {
+        for (int y = kernelRadius; y < image->height; y++) {
+            // offset = x pixels + y * width pixels
+            int copy_offset = sizeof(unsigned char) * x + sizeof(unsigned char) * image->width * y;
+
+            for (int i = -kernelRadius; i <= kernelRadius; i++) {
+                for (int j = -kernelRadius; j <= kernelRadius; j++) {
+                    int data_offset = sizeof(unsigned char) * (x + i)
+                                    + sizeof(unsigned char) * image->width * (y - j);
+                    if (image_data[data_offset] == 255) {
+                        image_copy[copy_offset] = 255;
+                        goto next_pixel;
+                    }
+                }
+            }
+            
+            next_pixel:
+        }
+    }
+
+    memcpy(image_data, image_copy, img_memsize);
+    free(image_copy);
+}
+
+void Erode(Image* image, int kernelSize) {
+    size_t img_memsize = sizeof(unsigned char) * image->width * image->height;
+    unsigned char* image_data = (unsigned char*) image->data;
+    unsigned char* image_copy = (unsigned char*) malloc(img_memsize);
+    memcpy(image_copy, image_data, img_memsize);
+
+    int kernelRadius = kernelSize / 2;
+
+    for (int x = kernelRadius; x < image->width - kernelRadius; x++) {
+        for (int y = kernelRadius; y < image->height; y++) {
+            // offset = x pixels + y * width pixels
+            int copy_offset = sizeof(unsigned char) * x + sizeof(unsigned char) * image->width * y;
+
+            for (int i = -kernelRadius; i <= kernelRadius; i++) {
+                for (int j = -kernelRadius; j <= kernelRadius; j++) {
+                    int data_offset = sizeof(unsigned char) * (x + i)
+                                    + sizeof(unsigned char) * image->width * (y - j);
+                    if (image_data[data_offset] == 0) {
+                        image_copy[copy_offset] = 0;
+                        goto next_pixel;
+                    }
+                }
+            }
+            
+            next_pixel:
+        }
+    }
+
+    memcpy(image_data, image_copy, img_memsize);
+    free(image_copy);
+}
+
+// Our image comes in UNCOMPRESSED GRAYSCALE format (8bit per pixel),
+// so I'll be assuming that all inputs to this function are of that type for now.
+void ImageThreshold(Image* image, unsigned char threshold) {
+    unsigned char* image_data = (unsigned char*) image->data;
+    for (int t = 0; t < image->height * image->width; t++) {
+        int offset = sizeof(unsigned char) * t;
+        
+        unsigned char pixel = image_data[offset];
+        
+        if (pixel < threshold) { image_data[offset] = 0; }
+        else { image_data[offset] = 255; }
+    }
+}
+
 int main(void) {
+    SetTraceLogLevel(LOG_WARNING);
     Clay_Raylib_Initialize(992, 699, "Lagosta", FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT); // Extra parameters to this function are new since the video was published
     uint64_t clayRequiredMemory = Clay_MinMemorySize();
     Clay_Arena clayMemoryTop = Clay_CreateArenaWithCapacityAndMemory(clayRequiredMemory, malloc(clayRequiredMemory));
@@ -32,10 +113,14 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    Image img_gabarito = LoadImage("resources/scans_teste_oci/out0001.png");
+    Image img_gabarito = LoadImage("resources/scans_teste_oci/out0002.png");
+    // ImageColorContrast(&img_gabarito, 100);
+    ImageThreshold(&img_gabarito, 210);
+    Dilate(&img_gabarito, 5);
+    Erode(&img_gabarito, 5);
     Texture2D text_gabarito = LoadTextureFromImage(img_gabarito);
 
-    Camera2D camera = { 0 };
+    Camera2D camera = { };
     camera.zoom = 0.75f;
 
     // base.png COORDS:
@@ -67,23 +152,30 @@ int main(void) {
     const float X_ITEM_SPACING = 0.04735f;
     const float Y_ITEM_SPACING = 0.042f;
 
-    int dragging = -1;
+    size_t dragging = -1;
     while (!WindowShouldClose()) {
         // ==== UPDATE ====
-        int selection = 0;
-        bool mouse_down = IsMouseButtonDown(1);
-        Vector2 click_pos = GetScreenToWorld2D(GetMousePosition(), camera);
 
-        if (!mouse_down) { dragging = -1; }
-        for (size_t i = 0; i < circles.size(); i++) {
-            Vector2& circle_center = circles[i];
-            if ( (dragging == -1 || dragging == i) && mouse_down
-            && (dragging != -1 || PointInCircle(click_pos, circle_center, circle_radius)) ) {
-                dragging = selection;
-                circle_center = click_pos;
+        // Drags the circle closest to the mouse
+        bool mouse_down = IsMouseButtonDown(1);
+        if (mouse_down) {
+            Vector2 click_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+            if (dragging == (size_t) -1) {
+                size_t closest_circle = 0;
+                for (size_t i = 0; i < circles.size(); i++) {
+                    Vector2 circle_center = circles[i];
+                    if (Vector2Distance(circle_center, click_pos) <= Vector2Distance(circles[closest_circle], click_pos)) {
+                        closest_circle = i;
+                    }
+                }
+                dragging = closest_circle;
             }
-            selection++;
+            circles[dragging] = click_pos;
         }
+        else {
+             dragging = -1;
+        }
+
         
         if (IsKeyPressed(KEY_P)) {
             printf("v0  x%.2f y%.2f | v1  x%.2f y%.2f\n", circles[0].x, circles[0].y, circles[1].x, circles[1].y);
