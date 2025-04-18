@@ -1,3 +1,4 @@
+#include <raylib.h>
 #define CLAY_IMPLEMENTATION
 #include "../include/clay.h"
 #include "../include/clay_renderer_raylib.c"
@@ -7,7 +8,10 @@ void HandleClayErrors(Clay_ErrorData errorData) {
 }
 
 int main(void) {
-    Clay_Raylib_Initialize(1024, 768, "Introducing Clay Demo", FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT); // Extra parameters to this function are new since the video was published
+    Clay_Raylib_Initialize(1024, 768, "Lagosta", FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT); // Extra parameters to this function are new since the video was published
+    
+    Image i = LoadImage("resources/scans_teste_oci/test0001.png");
+    Texture2D t = LoadTextureFromImage(i);
 
     Font fonts[1];
     fonts[0] = LoadFontEx("resources/fonts/NunitoSans-Regular.ttf", 48, 0, 400);
@@ -26,7 +30,8 @@ int main(void) {
 
     while (!WindowShouldClose()) {
         BeginDrawing();
-        ClearBackground(BLACK);
+            ClearBackground(BLACK);
+            DrawTexture(t, 0, 0, WHITE);
         EndDrawing();
     }
 
