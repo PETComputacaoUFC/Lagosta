@@ -1,0 +1,7 @@
+-Iinclude
+-Llibs
+-std=c++23
+-Wall
+-Wextra
+-Wno-unused-variable
+-Wno-missing-field-initializers
