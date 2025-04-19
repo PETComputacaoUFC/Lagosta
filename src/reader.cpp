@@ -1,8 +1,11 @@
 #include "reader.hpp"
+#include "filters.hpp"
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <raylib.h>
 #include <raymath.h>
+#include <string>
 
 // base.png COORDS:
 // square:  63, 63  -->  1260, 869  |  (1197x806)
@@ -25,23 +28,45 @@ const float FASE_X = 0.763575606f, FASE_Y = 0.651364764f;
 const float X_ITEM_SPACING = 0.04735f;
 const float Y_ITEM_SPACING = 0.042f;
 
-Reader::Reader() : image(nullptr), read_mode(SAMPLE_CIRCLE), read_radius(4) {
+const char ITEMS_STR[6] = "abcde";
+
+const int KERNEL_SIZE = 4;
+const int READ_RADIUS = 7;
+const float CHOICE_LERP_T = 0.625f;
+const float DOUBLE_MARK_THRESHOLD = 0.1f;
+const float PIXEL_THRESHOLD = 0.4f; // threshold that defines if a pixel is read as marked or not
+const float AREA_THRESHOLD = 0.6f;  // threshold that defines if a choice is considered as marked or not
+
+Reader::Reader() : image(nullptr), read_mode(SAMPLE_CIRCLE) {
     square[0] = { 63, 63 };
     square[1] = { 1260, 63 };
     square[2] = { 63, 869 };
     square[3] = { 1260, 869 };
 }
 
-Reader::Reader(Image* image, Vector2 square[4], ReadMode read_mode, int read_radius, float read_threshold, float avg_threshold) {
-    this->image = image;
+Reader::Reader(Image* image, Vector2 square[4], ReadMode read_mode) {
+    Image grayscale = ImageCopy(*image);
+    ImageFormat(&grayscale, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+    
+    Image image_filtered1 = ImageCopy(*image);
+    ImagePow(&image_filtered1, 1.5);
+    ImageInvert(&image_filtered1);
+
+    Image image_filtered2 = ImageCopy(image_filtered1);
+    ImageThreshold(&image_filtered2, 60);
+    ImageErode(&image_filtered2, KERNEL_SIZE);
+    ImageDilate(&image_filtered2, KERNEL_SIZE);
+
+    this->image = grayscale;
+    this->image_filtered1 = image_filtered1;
+    this->image_filtered2 = image_filtered2;
     this->read_mode = read_mode;
-    this->read_radius = read_radius;
-    this->read_threshold = read_threshold;
-    this->avg_threshold = avg_threshold;
+    
     for (int i = 0; i < 4; i++) { this->square[i] = square[i]; }
 }
 
-void Reader::read() {
+std::string Reader::read() {
+    answer_string.clear();
     items.clear();
 
     for (int i = 0; i < 10; i++) {
@@ -53,7 +78,9 @@ void Reader::read() {
             Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            item.choice_readings[c] = read_area(center.x, center.y);
+            float reading1 = read_area(&image_filtered1, center.x, center.y);
+            float reading2 = read_area(&image_filtered2, center.x, center.y);
+            item.choice_readings[c] = lerp(reading1, reading2, CHOICE_LERP_T);
         }
         items.push_back(item);
     }
@@ -67,57 +94,61 @@ void Reader::read() {
             Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            item.choice_readings[c] = read_area(center.x, center.y);
+            float reading1 = read_area(&image_filtered1, center.x, center.y);
+            float reading2 = read_area(&image_filtered2, center.x, center.y);
+            item.choice_readings[c] = lerp(reading1, reading2, CHOICE_LERP_T);
         }
         items.push_back(item);
     }
 
-    // TODO: SET THRESHOLD
-    // TODO: what if there are multiple selections in a question? just get the max reading? should we report that to the user?
     for (Item& item : items) {
-        size_t choice_index = -1;
+        char choice_id = '0';
+        size_t choice_index = 0;
         float choice_value = -1.0f;
 
         for (size_t choice = 0; choice < item.choice_readings.size(); choice++) {
             float reading = item.choice_readings[choice];
-            if (reading > 0.33f && reading > choice_value) {
+            if (reading > AREA_THRESHOLD && reading > choice_value) {
+                choice_id = ITEMS_STR[choice];
                 choice_index = choice;
                 choice_value = reading;
             }
         }
 
-        item.choice = choice_index;
+        // anula a questão caso um item tenha mais de uma marcação
+        for (size_t choice = 0; choice < item.choice_readings.size(); choice++) {
+            if (choice != choice_index && abs(choice_value - item.choice_readings[choice]) <= DOUBLE_MARK_THRESHOLD) {
+                choice_id = 'X';
+                break;
+            }
+        }
+        item.choice = choice_id;
+        answer_string.append(&item.choice);
     }
+    return answer_string;
 }
 
 // Retorna o valor do pixel entre 0 e 1
-float Reader::read_pixel(int x, int y) {
+float Reader::read_pixel(Image* image, int x, int y) {
     int offset = x + image->width * y;
     return ( (float) ((unsigned char*) image->data)[offset] ) / 255.0f;
 }
 
-// TODO: should we use a thresholded image or is it better to use a grayscale one?
-// I mean, mathematically if we're just using the threshold anyways it should be the same. But constructing an average
-// could be better to avoid errors where the student accidentaly marked the wrong item and tried to fix it.
-// It could also prevent error readings from smudges etc.
-// In short, things that are more boldly marked could have an advantage on the reading.
-float Reader::read_area(int x, int y) {
-    const int NUM_SAMPLES = 100;
-
+float Reader::read_area(Image* image, int x, int y) {
     Vector2 center = { (float) x, (float) y };
     float reading = 0.0f;
     float read_count = 0.0f;
 
-    for (int r_x = -read_radius; r_x <= read_radius; r_x++) {
-        for (int r_y = -read_radius; r_y <= read_radius; r_y++) {
+    for (int r_x = -READ_RADIUS; r_x <= READ_RADIUS; r_x++) {
+        for (int r_y = -READ_RADIUS; r_y <= READ_RADIUS; r_y++) {
             Vector2 read_coords = {(float) (x + r_x), (float) (y + r_y) };
-            if (read_mode == SAMPLE_CIRCLE && Vector2Distance(center, read_coords) > read_radius ) {
+            if (read_mode == SAMPLE_CIRCLE && Vector2Distance(center, read_coords) > READ_RADIUS ) {
                 continue;
             }
 
             read_count += 1.0f;
-            float pixel = read_pixel(read_coords.x, read_coords.y);
-            if (pixel >= read_threshold) { reading += pixel; }
+            float pixel = read_pixel(image, read_coords.x, read_coords.y);
+            if (pixel >= PIXEL_THRESHOLD) { reading += pixel; }
         }
     }
 

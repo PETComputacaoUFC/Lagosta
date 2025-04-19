@@ -1,5 +1,6 @@
 #pragma once
 #include <raylib.h>
+#include <string>
 #include <vector>
 #include <raymath.h>
 
@@ -9,27 +10,35 @@ enum ReadMode: unsigned char {
 };
 
 struct Item {
-    int choice = -1;
+    char choice = '0';
     std::vector<float> choice_readings;
 };
 
-class Reader {
+// TODO: ReadingBox with coordinates instead of hard-coded values (see reader.cpp)
+struct ReadingBox {
+
+};
+
+struct Reader {
 public:
-    // TODO: ReadingBox with coordinates instead of hard-coded values (see reader.cpp)
-    Image* image;
+    std::string answer_string = "";
+    
     Vector2 square[4];
-    ReadMode read_mode;
-    int read_radius;
-    float read_threshold;
-    float avg_threshold;
+    
+    Image image; // Grayscale image
+    Image image_filtered1; // Inversion + contrast
+    Image image_filtered2; // Threshold filter on top of filter 1
+    
     std::vector<Item> items = std::vector<Item>(20); // questões
     std::vector<Item> head = std::vector<Item>(2);   // cabeçalho: modalidade e fase
-
+    
+    ReadMode read_mode;
+    
     Reader();
-    Reader(Image* image, Vector2 square[4], ReadMode read_mode, int read_radius, float read_threshold, float avg_threshold);
+    Reader(Image* image, Vector2 square[4], ReadMode read_mode);
 
-    void read();
+    std::string read();
 private:
-    float read_pixel(int x, int y);
-    float read_area(int x, int y);
+    float read_pixel(Image* image, int x, int y);
+    float read_area(Image* image, int x, int y);
 };

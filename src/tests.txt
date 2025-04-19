@@ -1,14 +1,40 @@
 # nome_arquivo esperado1 aceitavel # comentario
-out0001.png c22aaaa22c0e23333320
+
+out0001.png cXXaaaaXXc0eXXXXXXX0
+#           cXXaaaaXXc0eXXXXXXX0
+
 out0002.png abcdedcbabdbdbdbdbdb ________0___________ # a segunda metade testa a capacidade do leitor de discernir pequenos erros de marcação
-out0003.png a2a2c2b3b2abacbd00bc ____00___0000000__00
-out0004.png aa0cdbdecbcbdbeadb3a ___2__0____0_______0 # o item 4 é um caso difícil de marcação errada
-out0005.png bdce020bab0bd02abcde _________020________
-out0006.png ae0cdbeadc0050000000 _0_00000_0__________ # baixíssimo contraste. não espero que seja lido.
-out0007.png acc20c2bc0cbbbe0a2bd
-out0008.png ae0cdbeadc0050000000 _0_00000_0__________ # 0006 mas maior contraste. talvez seja lido melhor.
-out0009.png abb2de0abedbcbcbeadc ____________00______
-out0010.png c22aaaa22c0e23333320
-out0011.png a2a2c2b3b2abacbd00bc 000_00___0000000__00
-out0012.png abcdedcb0bdbdbdbdbdb ________00__________ # 0002 mas com menor contraste.
-out0013.png abb2de0abedbcbcbeadc ____________00______
+#           abcdedcbabdbdbdbdbdb
+
+out0003.png aXaXcXbXbXabacbd00bc ____00___0000000__00
+#           aXaX0bbXbc00000000bc
+
+out0004.png ab0cdbdecbcbdbeadbXa ___X__0____0_______0 # o item 4 é um caso difícil de marcação errada
+#           ab0cdbdecbcbdbeadbXa
+
+out0005.png bdce0X0bab0bd0Xabcde _________0X0________
+#           bdce0X0bab0bd0Xabcde
+
+out0006.png ae0cdbeadc00X0000000 _0_00000_0__________ # baixíssimo contraste. não espero que seja lido.
+#           00000000d00000000000 # lol
+
+out0007.png accX0cXbc0cbbbe0aXbd
+#           accX0cXbc0cbbbe0aXbd
+
+out0008.png ae0cdbeadc00X0000000 _0_00000_0__________ # 0006 mas maior contraste. talvez seja lido melhor.
+#           a0000000d000X0000000
+
+out0009.png abbXde0abedbcbcbeadc ____________00______
+#           abbXde0abedbc0cbeadc
+
+out0010.png abcdedcbabdbdbdbdbdb # 0002 com menor contraste.
+            abcdedcb0bdbdbdbdbdb
+
+out0011.png aXaXcXbXbXabacbd00bc 000_00___0000000__00
+#           SEM_TESTE
+
+out0012.png abcdedcb0bdbdbdbdbdb ________00__________ # 0002 com menor contraste.
+#           abcdedcb0bdbdbdbdbdb
+
+out0013.png abbXde0abedbcbcbeadc ____________00______ # 0009 com menor contraste.
+            abbXde0abedb00cbeadc
