@@ -66,24 +66,44 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    Image img_gabarito = LoadImage("resources/scans_teste_oci/out0002.png");
-    ImageThreshold(&img_gabarito, 220);
-    ImageDilate(&img_gabarito, 5);
-    ImageErode(&img_gabarito, 5);
+    // out0002: checar se a direita foi lida corretamente, simulação de "erro" na marcação do gabarito
+    // out0003: analisar marcações com baixo contraste
+    // out0004: analisar itens 04, 07, 12, 19, 20
+    // out0005: analisar itens 05, 10, 11, 12, 14, 15
+    // out0006: analisar marcações de baixíssimo contraste
+    // out0008: analisar marcações de baixo contraste
+    // out0009: analisar itens 07, 13, 14
+    // 0010, 0011, 0012, 0013 são versões de menor contraste de 0002, 0003, 0002, 0009
+    Image img_gabarito = LoadImage("resources/scans_teste_oci/out0004.png");
+    ImagePow(&img_gabarito, 1.5);
+    ImageInvert(&img_gabarito);
 
-    Texture2D text_gabarito = LoadTextureFromImage(img_gabarito);
+    Image img_gabarito_filtro = ImageCopy(img_gabarito);
+    Texture2D text_gabarito = LoadTextureFromImage(img_gabarito_filtro);
+
+    int kernel_size = 4;
+    ImageThreshold(&img_gabarito_filtro, 60);
+    ImageErode(&img_gabarito_filtro, kernel_size);
+    ImageDilate(&img_gabarito_filtro, kernel_size);
+    Texture2D text_gabarito_filtro = LoadTextureFromImage(img_gabarito_filtro);
 
     Camera2D camera = {};
     camera.zoom = 0.75f;
 
-    Reader reader = Reader(&img_gabarito, circles, RANDOM_SAMPLE, 4);
+    Reader reader = Reader(&img_gabarito, circles, SAMPLE_CIRCLE, 5, 0.33f, 0.6);
     for (int i = 0; i < 20; i++) {
         reader.items[i] = Item();
+        reader.items[i].choice_readings = { 0.0, 0.0, 0.0, 0.0, 0.0 };
     }
 
     size_t dragging = -1;
+    bool filtro = false;
     while (!WindowShouldClose()) {
         // ==== UPDATE ====
+        if (IsKeyPressed(KEY_SPACE)) {
+            filtro = not filtro;
+            reader.image = filtro ? &img_gabarito_filtro : &img_gabarito;
+        }
 
         // Drags the circle closest to the mouse
         bool mouse_down = IsMouseButtonDown(1);
@@ -122,7 +142,7 @@ int main(void) {
         BeginDrawing();
             ClearBackground(BLACK);
             BeginMode2D(camera);
-                DrawTexture(text_gabarito, 0, 0, WHITE);
+                DrawTexture(filtro ? text_gabarito_filtro : text_gabarito, 0, 0, WHITE);
                 for (Vector2 circle_center: circles) {
                     DrawCircleV(circle_center, circle_radius, RED);
                 }
@@ -135,6 +155,9 @@ int main(void) {
                         Vector2 v2 = Vector2Lerp(circles[2], circles[3], x_lerp_amount);
             
                         Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+                        char text[5];
+                        sprintf(text, "%.2f", reader.items[i].choice_readings[c]);
+                        DrawText(text, center.x, center.y, 20, YELLOW);
                         DrawCircleV(center, 5.0f, reader.items[i].choice == c ? ORANGE : PURPLE);
                     }
                 }
@@ -147,6 +170,9 @@ int main(void) {
                         Vector2 v2 = Vector2Lerp(circles[2], circles[3], x_lerp_amount);
             
                         Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+                        char text[5];
+                        sprintf(text, "%.2f", reader.items[i+10].choice_readings[c]);
+                        DrawText(text, center.x, center.y, 20, YELLOW);
                         DrawCircleV(center, 5.0f, reader.items[i+10].choice == c ? ORANGE : PURPLE);
                     }
                 }
