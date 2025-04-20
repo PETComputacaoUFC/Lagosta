@@ -1,9 +1,5 @@
 #include "reader.hpp"
 
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
-
 #include "raymath.h"
 
 #include "filters.hpp"

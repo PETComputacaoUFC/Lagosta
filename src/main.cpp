@@ -1,13 +1,10 @@
-#include <stdbool.h>
-
-#define CLAY_IMPLEMENTATION
-// #include "clay.h"
-#include "clay_renderer_raylib.c"
+#include "align.hpp"
 #include "raylib.h"
 #include "raymath.h"
 
-#include "reader.hpp"
-
+#define CLAY_IMPLEMENTATION
+#include "clay.h"
+#include "clay_renderer_raylib.c"
 
 // base.png COORDS:
 // square:  63, 63  -->  1260, 869  |  (1197x806)
@@ -25,10 +22,10 @@
 // horizontal spacing: 0.04735  |  vertical spacing: 0.042
 float circle_radius = 9.0f;
 Vector2 circles[4] = {
-    { 63, 63 },
-    { 1260, 63 },
-    { 63, 869 },
-    { 1260, 869 },
+    { 100, 100 },
+    { 400, 100 },
+    { 100, 400 },
+    { 400, 400 },
 };
 
 const float Q01A_X = 0.192147034f, Q01A_Y = 0.566997519f;
@@ -63,40 +60,24 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    // out0002: checar se a direita foi lida corretamente, simulação de "erro" na marcação do gabarito
-    // out0003: analisar marcações com baixo contraste
-    // out0004: analisar itens 04, 07, 12, 19, 20
-    // out0005: analisar itens 05, 10, 11, 12, 14, 15
-    // out0006: analisar marcações de baixíssimo contraste
-    // out0008: analisar marcações de baixo contraste
-    // out0009: analisar itens 07, 13, 14
-    // 0010, 0011, 0012, 0013 são versões de menor contraste de 0002, 0003, 0002, 0009
-    Image img_gabarito = LoadImage("resources/scans_teste_oci/out0004.png");
-    Reader reader = Reader(&img_gabarito, circles, SAMPLE_CIRCLE);
+    Image img_gabarito = LoadImage("resources/align_test/align_test06.png");
+    Image img_template = LoadImage("resources/align_test/template.png");
+
+    ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+    ImageFormat(&img_template, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+
+    Vector2 match_coords = ImageFindTemplate(&img_gabarito, &img_template) + Vector2(26, 26);
+
+    printf("x%.2f y%.2f\n", match_coords.x, match_coords.y);
+    circles[0] = match_coords;
 
     Camera2D camera = {};
     camera.zoom = 0.75f;
 
-    for (int i = 0; i < 20; i++) {
-        reader.items[i] = Item();
-        reader.items[i].choice_readings = { 0.0, 0.0, 0.0, 0.0, 0.0 };
-    }
-
     size_t dragging = -1;
-    int filter = 1;
 
-    Texture2D texturas[3] = {
-        LoadTextureFromImage(img_gabarito),
-        LoadTextureFromImage(reader.image_filtered1),
-        LoadTextureFromImage(reader.image_filtered2),
-    };
-
+    Texture2D texture = LoadTextureFromImage(img_gabarito);
     while (!WindowShouldClose()) {
-        // ==== UPDATE ====
-        if (IsKeyPressed(KEY_SPACE)) {
-            filter = (filter + 1) % 3;
-        }
-
         // Drags the circle closest to the mouse
         bool mouse_down = IsMouseButtonDown(1);
         if (mouse_down) {
@@ -117,58 +98,25 @@ int main(void) {
              dragging = -1;
         }
 
+        if (IsMouseButtonPressed(0)) {
+            Vector2 click_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+            printf("%d\n", ImageTestTemplateV(&img_gabarito, &img_template, click_pos));
+        }
+
         // Prints box coords
         if (IsKeyPressed(KEY_P)) {
             printf("v0  x%.2f y%.2f | v1  x%.2f y%.2f\n", circles[0].x, circles[0].y, circles[1].x, circles[1].y);
             printf("v2  x%.2f y%.2f | v3  x%.2f y%.2f\n", circles[2].x, circles[2].y, circles[3].x, circles[3].y);
         }
 
-        // Updates reader and... well... reads, ig.
-        if (IsKeyPressed(KEY_R)) {
-            for (int i = 0; i < 4; i++) { reader.square[i] = circles[i]; }
-            std::string answers = reader.read();
-            printf("%s\n", answers.c_str());
-        }
-
         // ==== DRAW ====
         BeginDrawing();
             ClearBackground(BLACK);
             BeginMode2D(camera);
-                DrawTexture(texturas[filter], 0, 0, WHITE);
+                DrawTexture(texture, 0, 0, WHITE);
                 for (Vector2 circle_center: circles) {
                     DrawCircleV(circle_center, circle_radius, RED);
                 }
-
-                for (int i = 0; i < 10; i++) {
-                    float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float) i;
-                    for (int c = 0; c < 5; c++) {
-                        float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float) c;
-                        Vector2 v1 = Vector2Lerp(circles[0], circles[1], x_lerp_amount);
-                        Vector2 v2 = Vector2Lerp(circles[2], circles[3], x_lerp_amount);
-            
-                        Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-                        char text[6];
-                        sprintf(text, "%.2f", reader.items[i].choice_readings[c]);
-                        DrawText(text, center.x, center.y, 20, YELLOW);
-                        DrawCircleV(center, 5.0f, reader.items[i].choice == c ? ORANGE : PURPLE);
-                    }
-                }
-
-                for (int i = 0; i < 10; i++) {
-                    float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float) i;
-                    for (int c = 0; c < 5; c++) {
-                        float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float) c;
-                        Vector2 v1 = Vector2Lerp(circles[0], circles[1], x_lerp_amount);
-                        Vector2 v2 = Vector2Lerp(circles[2], circles[3], x_lerp_amount);
-            
-                        Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-                        char text[6];
-                        sprintf(text, "%.2f", reader.items[i+10].choice_readings[c]);
-                        DrawText(text, center.x, center.y, 20, YELLOW);
-                        DrawCircleV(center, 5.0f, reader.items[i+10].choice == c ? ORANGE : PURPLE);
-                    }
-                }
-
             EndMode2D();
         EndDrawing();
     }
