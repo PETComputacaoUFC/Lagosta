@@ -3,4 +3,4 @@
 
 Vector2 ImageFindTemplate(Image* image, Image* plate);
 
-int ImageTestTemplateV(Image* image, Image* plate, Vector2 coords);
+int ImageTestTemplate(Image* image, Image* plate, int x, int y);

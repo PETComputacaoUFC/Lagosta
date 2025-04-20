@@ -1,4 +1,5 @@
 #include "align.hpp"
+#include "filters.hpp"
 #include "raylib.h"
 #include "raymath.h"
 
@@ -60,13 +61,14 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    Image img_gabarito = LoadImage("resources/align_test/align_test06.png");
+    Image img_gabarito = LoadImage("resources/align_test/align_test02.png");
     Image img_template = LoadImage("resources/align_test/template.png");
 
     ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+    // ImageThreshold(&img_gabarito, 200);
     ImageFormat(&img_template, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 
-    Vector2 match_coords = ImageFindTemplate(&img_gabarito, &img_template) + Vector2(26, 26);
+    Vector2 match_coords = ImageFindTemplate(&img_gabarito, &img_template);
 
     printf("x%.2f y%.2f\n", match_coords.x, match_coords.y);
     circles[0] = match_coords;
@@ -100,7 +102,7 @@ int main(void) {
 
         if (IsMouseButtonPressed(0)) {
             Vector2 click_pos = GetScreenToWorld2D(GetMousePosition(), camera);
-            printf("%d\n", ImageTestTemplateV(&img_gabarito, &img_template, click_pos));
+            printf("%d\n", ImageTestTemplate(&img_gabarito, &img_template, click_pos.x, click_pos.y));
         }
 
         // Prints box coords
