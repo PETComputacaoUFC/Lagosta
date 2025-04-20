@@ -13,10 +13,6 @@ else
 	CREATE_DIR = mkdir -p bin
 endif
 
-ifeq ($(RELEASE),1)
-	CFLAGS += -static
-endif
-
 all: $(OUTPUT)
 
 $(OUTPUT): $(SOURCES) | dir
