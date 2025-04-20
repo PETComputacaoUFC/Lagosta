@@ -1,5 +1,5 @@
-#include "align.hpp"
-#include "filters.hpp"
+#include "imgtools/align.hpp"
+#include "imgtools/imgtools.hpp"
 #include "raylib.h"
 #include "raymath.h"
 
@@ -61,24 +61,26 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    Image img_gabarito = LoadImage("resources/align_test/align_test02.png");
-    Image img_template = LoadImage("resources/align_test/template.png");
-
+    Image img_gabarito = LoadImage("resources/foto2.png");
     ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-    // ImageThreshold(&img_gabarito, 200);
+    Image img_template = LoadImage("resources/align_test/template.png");
     ImageFormat(&img_template, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 
-    Vector2 match_coords = ImageFindTemplate(&img_gabarito, &img_template);
+    Gradient g = Gradient(&img_gabarito);
+    Image gradient_img = g.image();
+    // ImageThreshold(&img_gabarito, 200);
 
-    printf("x%.2f y%.2f\n", match_coords.x, match_coords.y);
-    circles[0] = match_coords;
+    // Vector2 match_coords = ImageFindTemplate(&img_gabarito, &img_template);
+
+    // printf("x%.2f y%.2f\n", match_coords.x, match_coords.y);
+    // circles[0] = match_coords;
 
     Camera2D camera = {};
     camera.zoom = 0.75f;
 
     size_t dragging = -1;
 
-    Texture2D texture = LoadTextureFromImage(img_gabarito);
+    Texture2D texture = LoadTextureFromImage(gradient_img);
     while (!WindowShouldClose()) {
         // Drags the circle closest to the mouse
         bool mouse_down = IsMouseButtonDown(1);

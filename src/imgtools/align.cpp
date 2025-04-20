@@ -1,19 +1,14 @@
 #include "align.hpp"
-#include "raylib.h"
 #include <cstdio>
 #include <cstdlib>
-
-unsigned char GetPixel(Image* image, int x, int y) {
-    int offset = x + y * image->width;
-    if (offset >= image->width * image->height) { return 0; } // pixel fora da imagem
-    return ( (unsigned char*) image->data)[offset];
-}
+#include "raylib.h"
+#include "imgtools.hpp"
 
 int ImageTestTemplate(Image* image, Image* plate, int x, int y) {
     int match = 0;
     for (int plate_y = 0; plate_y < plate->height; plate_y++) {
         for (int plate_x = 0; plate_x < plate->width; plate_x++ ) {
-            unsigned char img_pixel = GetPixel(image, x + plate_x, y + plate_y);
+            unsigned char img_pixel = GetPixelSafe(image, x + plate_x, y + plate_y);
             unsigned char plate_pixel = GetPixel(plate, plate_x, plate_y);
             match += 255 - abs(img_pixel - plate_pixel);
         }

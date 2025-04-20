@@ -2,7 +2,7 @@
 
 #include "raymath.h"
 
-#include "filters.hpp"
+#include "imgtools/filters.hpp"
 
 // base.png COORDS:
 // square:  63, 63  -->  1260, 869  |  (1197x806)
