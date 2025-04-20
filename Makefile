@@ -3,7 +3,9 @@ SOURCES = ./src/main.cpp ./src/filters.cpp ./src/reader.cpp
 OBJECTS = $(patsubst ./src/%.cpp, ./bin/%.o, $(SOURCES))
 
 # Detectar sistema e terminal
-UNAME_S := $(shell uname)
+ifneq ($(OS),Windows_NT) # previne erro chato rodando make no cmd ou powershell
+	UNAME_S := $(shell uname)
+endif
 SHELLTYPE := $(shell echo $$SHELL)
 
 # Detecta se o sistema é windows pelo mingw, msys, ou flag do OS
@@ -26,10 +28,10 @@ ifeq ($(IS_WINDOWS),1) # Flags de compilamento no windows
 	# Se for bash no Windows
 	ifneq (,$(findstring /bin/bash,$(SHELLTYPE)))
 		CREATE_DIR = mkdir -p bin
-		CLEAN = rm $(OUTPUT) $(OBJECTS)
+		CLEAN = rm -rf ./bin/*
 	else
 		CREATE_DIR = if not exist bin mkdir bin
-		CLEAN = if exist $(OUTPUT) del $(OUTPUT) $(OBJECTS)
+		CLEAN = del /f /q .\\bin\\*
 	endif
 else # Flags de compilamento no linux
 	CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-variable \
@@ -37,12 +39,12 @@ else # Flags de compilamento no linux
 	LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -Llibs
 	OUTPUT = ./bin/main
 	CREATE_DIR = mkdir -p bin
-	CLEAN = rm $(OUTPUT) $(OBJECTS)
+	CLEAN = rm -rf ./bin/*
 endif
 
 all: $(OUTPUT)
 
-$(OUTPUT): $(OBJECTS) | dir
+$(OUTPUT): dir | $(OBJECTS)
 	$(CC) $(OBJECTS) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)
 
 ./bin/%.o: ./src/%.cpp
@@ -56,3 +58,5 @@ run: all
 
 clean:
 	@$(CLEAN)
+
+.PHONY = all dir run clean
