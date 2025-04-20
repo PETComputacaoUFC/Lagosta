@@ -1,8 +1,7 @@
 #pragma once
-#include <raylib.h>
 #include <string>
 #include <vector>
-#include <raymath.h>
+#include "raylib.h"
 
 enum ReadMode: unsigned char {
     SAMPLE_SQUARE, // Averages a square with size 2*read_radius around the item's center.

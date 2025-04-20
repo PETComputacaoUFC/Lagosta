@@ -1,15 +1,13 @@
-#include "reader.hpp"
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <raylib.h>
-#include <raymath.h>
 #include <stdbool.h>
 
 #define CLAY_IMPLEMENTATION
-#include "../include/clay.h"
-#include "../include/clay_renderer_raylib.c"
+// #include "clay.h"
+#include "clay_renderer_raylib.c"
+#include "raylib.h"
+#include "raymath.h"
+
 #include "reader.hpp"
+
 
 // base.png COORDS:
 // square:  63, 63  -->  1260, 869  |  (1197x806)

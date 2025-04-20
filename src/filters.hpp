@@ -1,7 +1,4 @@
 #pragma once
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include "raylib.h"
 
 void ImageDilate(Image* image, int kernel_size);

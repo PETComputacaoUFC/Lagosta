@@ -1,11 +1,12 @@
 #include "reader.hpp"
-#include "filters.hpp"
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <raylib.h>
-#include <raymath.h>
-#include <string>
+
+#include "raymath.h"
+
+#include "filters.hpp"
 
 // base.png COORDS:
 // square:  63, 63  -->  1260, 869  |  (1197x806)

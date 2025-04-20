@@ -1,5 +1,6 @@
 #include "filters.hpp"
 #include <cmath>
+#include <cstring>
 #include <functional>
 #include <thread>
 #include <vector>
