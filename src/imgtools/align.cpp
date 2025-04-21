@@ -4,7 +4,7 @@
 #include "raylib.h"
 #include "imgtools.hpp"
 
-int ImageTestTemplate(Image* image, Image* plate, int x, int y) {
+int ImageTestTemplate(Image *image, Image *plate, int x, int y) {
     int match = 0;
     for (int plate_y = 0; plate_y < plate->height; plate_y++) {
         for (int plate_x = 0; plate_x < plate->width; plate_x++ ) {
@@ -16,7 +16,7 @@ int ImageTestTemplate(Image* image, Image* plate, int x, int y) {
     return match;
 }
 
-Vector2 ImageFindTemplate(Image* image, Image* plate) {
+Vector2 ImageFindTemplate(Image *image, Image *plate) {
     int match_x = 0, match_y = 0;
     int best_match = 0;
 

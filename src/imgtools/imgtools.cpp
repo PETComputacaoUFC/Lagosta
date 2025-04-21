@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-float XDerivative(Image* image, int x, int y) {
+float XDerivative(Image *image, int x, int y) {
     if (x == 0) {
         // forwards
         return GetPixelF(image, x + 1, y) - GetPixelF(image, x, y);
@@ -16,7 +16,7 @@ float XDerivative(Image* image, int x, int y) {
     return (GetPixelF(image, x + 1, y) - GetPixelF(image, x - 1, y)) / 2.0f;
 }
 
-float YDerivative(Image* image, int x, int y) {
+float YDerivative(Image *image, int x, int y) {
     if (y == 0) {
         // forwards
         return GetPixelF(image, x, y + 1) - GetPixelF(image, x, y);
@@ -33,12 +33,12 @@ GradientVector::GradientVector(float x, float y) {
     this->y = y;
 }
 
-GradientVector::GradientVector(Image* image, int x, int y) {
+GradientVector::GradientVector(Image *image, int x, int y) {
     this->x = XDerivative(image, x, y);
     this->y = YDerivative(image, x, y);
 }
 
-Gradient::Gradient(Image* image) {
+Gradient::Gradient(Image *image) {
     width = image->width;
     height = image->height;
     data = (GradientVector*) malloc(width * height * sizeof(GradientVector));
@@ -58,7 +58,7 @@ Image Gradient::image() {
     i.mipmaps = 1;
     i.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
 
-    unsigned char* img_data = (unsigned char*) i.data;
+    unsigned char *img_data = (unsigned char*) i.data;
     for (int v = 0; v < width * height; v++) {
         img_data[v] = (unsigned char) std::clamp(data[v].magnitude() * 255.0f, 0.0f, 255.0f);
     }

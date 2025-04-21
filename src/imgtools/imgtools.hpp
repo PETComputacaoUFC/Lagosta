@@ -8,22 +8,22 @@ struct GradientVector {
     float y;
 
     GradientVector(float x, float y);
-    GradientVector(Image* image, int x, int y);
+    GradientVector(Image *image, int x, int y);
 
     inline float magnitude() { return sqrt(x*x + y*y); }
     inline float fast_magnitude() { return std::abs(x) + std::abs(y); }
 };
 
 struct Gradient {
-    GradientVector* data;
+    GradientVector *data;
     int width, height;
 
-    Gradient(Image* image);
+    Gradient(Image *image);
 
     Image image();
 
     // unsafe getter
-    inline GradientVector* operator[](int y) {
+    inline GradientVector *operator[](int y) {
         return data + y * width * sizeof(GradientVector);
     }
     // safe getter
@@ -50,5 +50,5 @@ inline unsigned char GetPixelSafe(Image *image, int x, int y) {
     return ((unsigned char*)image->data)[x + y * image->width];
 }
 
-inline float GetPixelF(Image* image, int x, int y) { return ((float) GetPixel(image, x, y)) / 255.0f; }
-inline float GetPixelFSafe(Image* image, int x, int y) { return ((float) GetPixelSafe(image, x, y)) / 255.0f; }
+inline float GetPixelF(Image *image, int x, int y) { return ((float) GetPixel(image, x, y)) / 255.0f; }
+inline float GetPixelFSafe(Image *image, int x, int y) { return ((float) GetPixelSafe(image, x, y)) / 255.0f; }

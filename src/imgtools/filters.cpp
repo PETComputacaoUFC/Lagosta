@@ -26,10 +26,10 @@ void do_threads(std::function<void(int,int)> lambda, int elements) {
 
 // Our image comes in UNCOMPRESSED GRAYSCALE format (8bit per pixel),
 // so I'll be assuming that all inputs to this function are of that type for now.
-void ImageDilate(Image* image, int kernel_size) {
+void ImageDilate(Image *image, int kernel_size) {
     size_t img_memsize = sizeof(unsigned char) * image->width * image->height;
-    unsigned char* image_data = (unsigned char*) image->data;
-    unsigned char* image_copy = (unsigned char*) malloc(img_memsize);
+    unsigned char *image_data = (unsigned char*) image->data;
+    unsigned char *image_copy = (unsigned char*) malloc(img_memsize);
     memcpy(image_copy, image_data, img_memsize);
 
     int kernel_radius = kernel_size / 2;
@@ -67,8 +67,8 @@ void ImageDilate(Image* image, int kernel_size) {
 
 void ImageErode(Image *image, int kernel_size) {
     size_t img_memsize = sizeof(unsigned char) * image->width * image->height;
-    unsigned char* image_data = (unsigned char*) image->data;
-    unsigned char* image_copy = (unsigned char*) malloc(img_memsize);
+    unsigned char *image_data = (unsigned char*) image->data;
+    unsigned char *image_copy = (unsigned char*) malloc(img_memsize);
     memcpy(image_copy, image_data, img_memsize);
 
     int kernel_radius = kernel_size / 2;
@@ -105,7 +105,7 @@ void ImageErode(Image *image, int kernel_size) {
 }
 
 void ImageThreshold(Image *image, unsigned char threshold) {
-    unsigned char* image_data = (unsigned char*) image->data;
+    unsigned char *image_data = (unsigned char*) image->data;
     
     auto lambda = [image_data, threshold](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {
@@ -123,7 +123,7 @@ void ImageThreshold(Image *image, unsigned char threshold) {
 }
 
 void ImageInvert(Image *image) {
-    unsigned char* image_data = (unsigned char*) image->data;
+    unsigned char *image_data = (unsigned char*) image->data;
     
     auto lambda = [image_data](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {
@@ -137,7 +137,7 @@ void ImageInvert(Image *image) {
 }
 
 void ImagePow(Image *image, float expo) {
-    unsigned char* image_data = (unsigned char*) image->data;
+    unsigned char *image_data = (unsigned char*) image->data;
     
     auto lambda = [image_data, expo](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {

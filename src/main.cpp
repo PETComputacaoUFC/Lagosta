@@ -23,10 +23,10 @@
 // horizontal spacing: 0.04735  |  vertical spacing: 0.042
 float circle_radius = 9.0f;
 Vector2 circles[4] = {
-    { 100, 100 },
-    { 400, 100 },
-    { 100, 400 },
-    { 400, 400 },
+    {100, 100},
+    {400, 100},
+    {100, 400},
+    {400, 400},
 };
 
 const float Q01A_X = 0.192147034f, Q01A_Y = 0.566997519f;
@@ -38,11 +38,6 @@ const float Y_ITEM_SPACING = 0.042f;
 
 void HandleClayErrors(Clay_ErrorData errorData) {
     printf("%s", errorData.errorText.chars);
-}
-
-bool PointInCircle(Vector2 p, Vector2 circle_center, float circle_radius) {
-    float distance = Vector2Distance(p, circle_center);
-    return distance <= circle_radius;
 }
 
 int main(void) {
@@ -61,17 +56,15 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    Image img_gabarito = LoadImage("resources/foto2.png");
+    Image img_gabarito = LoadImage("resources/align_test/align_test02.png");
     ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     Image img_template = LoadImage("resources/align_test/template.png");
     ImageFormat(&img_template, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 
     Gradient g = Gradient(&img_gabarito);
     Image gradient_img = g.image();
-    // ImageThreshold(&img_gabarito, 200);
-
+    
     // Vector2 match_coords = ImageFindTemplate(&img_gabarito, &img_template);
-
     // printf("x%.2f y%.2f\n", match_coords.x, match_coords.y);
     // circles[0] = match_coords;
 
