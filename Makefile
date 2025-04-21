@@ -1,8 +1,9 @@
 ############### PROJECT CONFIG ###############
 CXX := g++
 CXXFLAGS := -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-variable \
-		 -Iinclude -std=c++23 -O2
-LDFLAGS := -Llibs -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lZXing
+		 	-Iinclude -std=c++23 -O2
+LDFLAGS := -Llibs -lraylib -lZXing
+OS_LDFLAGS := -lGL -lm -lpthread -ldl -lrt -lX11
 
 SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp ./src/imgtools/align.cpp \
 		  ./src/imgtools/imgtools.cpp
@@ -26,7 +27,7 @@ else
 endif
 
 ifeq ($(IS_WINDOWS),1) # Flags de compilação no windows
-	LDFLAGS := -lraylib -lgdi32 -lwinmm -Iinclude -Llibs
+	OS_LDFLAGS := -lgdi32 -lwinmm
 	OUTPUT := ./build/lagosta.exe
 
 	# Se NÃO for bash no Windows
@@ -36,6 +37,7 @@ ifeq ($(IS_WINDOWS),1) # Flags de compilação no windows
 	endif
 endif
 
+LDFLAGS += $(OS_LDFLAGS)
 ############### BUILDING RULES ###############
 .PHONY = all dir run clean
 
