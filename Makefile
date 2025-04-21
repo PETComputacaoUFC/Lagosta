@@ -2,7 +2,7 @@
 CXX := g++
 CXXFLAGS := -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-variable \
 		 -Iinclude -std=c++23 -O2
-LDFLAGS := -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -Llibs
+LDFLAGS := -Llibs -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lZXing
 
 SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp ./src/imgtools/align.cpp \
 		  ./src/imgtools/imgtools.cpp
