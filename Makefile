@@ -20,8 +20,7 @@ else
 	UNAME_S := $(shell uname)
 	ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
 		IS_WINDOWS := 1
-	endif
-	ifeq ($(findstring MSYS,$(UNAME_S)),MSYS)
+	else ifeq ($(findstring MSYS,$(UNAME_S)),MSYS)
 		IS_WINDOWS := 1
 	endif
 endif
@@ -32,8 +31,8 @@ ifeq ($(IS_WINDOWS),1) # Flags de compilação no windows
 
 	# Se NÃO for bash no Windows
 	ifeq (,$(findstring /bin/bash,$(shell echo $$SHELL)))
-		CREATE_DIR := @for %%d in ($(patsubst /,\\, $(BUILD_DIRS))) do @if not exist "%%d" mkdir "%%d"
-		CLEAN := del /f /q $(patsubst /,\\,$(OBJECTS) $(OUTPUT))
+		CREATE_DIR := @for %%d in ($(subst /,\, $(BUILD_DIRS))) do @if not exist "%%d" mkdir "%%d"
+		CLEAN := @for %%d in ($(subst /,\, $(OBJECTS) $(OUTPUT))) do @if exist "%%d" del /F /Q "%%d"
 	endif
 endif
 
