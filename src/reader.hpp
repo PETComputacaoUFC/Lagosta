@@ -37,6 +37,7 @@ public:
     Reader(Image* image, Vector2 square[4], ReadMode read_mode);
 
     std::string read();
+    void draw_reading();
 
 private:
     float read_pixel(Image* image, int x, int y);

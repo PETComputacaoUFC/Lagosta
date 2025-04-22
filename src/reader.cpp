@@ -30,9 +30,8 @@ const int KERNEL_SIZE = 4;
 const int READ_RADIUS = 7;
 const float CHOICE_LERP_T = 0.625f;
 const float DOUBLE_MARK_THRESHOLD = 0.1f;
-const float PIXEL_THRESHOLD = 0.4f;  // threshold that defines if a pixel is read as marked or not
-const float AREA_THRESHOLD =
-    0.6f;  // threshold that defines if a choice is considered as marked or not
+const float PIXEL_THRESHOLD = 0.4f;  // threshold that defines if a pixel is read as marked
+const float AREA_THRESHOLD = 0.6f;  // threshold that defines if a choice is considered as marked
 
 Reader::Reader() : image(nullptr), read_mode(SAMPLE_CIRCLE) {
     square[0] = {63, 63};
@@ -155,4 +154,40 @@ float Reader::read_area(Image* image, int x, int y) {
     }
 
     return reading / read_count;
+}
+
+void Reader::draw_reading() {
+    for (Vector2 corner : square) {
+        DrawCircleV(corner, 5.0f, RED);
+    }
+    
+    for (int i = 0; i < 10; i++) {
+        float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float) i;
+        for (int c = 0; c < 5; c++) {
+            float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float) c;
+            Vector2 v1 = Vector2Lerp(square[0], square[1], x_lerp_amount);
+            Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
+
+            Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+            char text[6];
+            sprintf(text, "%.2f", items[i].choice_readings[c]);
+            DrawText(text, center.x, center.y, 20, YELLOW);
+            DrawCircleV(center, 5.0f, items[i].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float) i;
+        for (int c = 0; c < 5; c++) {
+            float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float) c;
+            Vector2 v1 = Vector2Lerp(square[0], square[1], x_lerp_amount);
+            Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
+
+            Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+            char text[6];
+            sprintf(text, "%.2f", items[i+10].choice_readings[c]);
+            DrawText(text, center.x, center.y, 20, YELLOW);
+            DrawCircleV(center, 5.0f, items[i+10].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
+        }
+    }
 }

@@ -4,7 +4,8 @@ CXXFLAGS := -Wall -Wextra -Wno-missing-field-initializers \
 		 -Iinclude -std=c++23 -O2
 LDFLAGS := -Llib -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
-SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp ./src/imgtools/imgtools.cpp
+SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp \
+		   ./src/imgtools/imgtools.cpp ./src/readertools.cpp
 OBJECTS := $(patsubst ./src/%.cpp, ./build/%.o, $(SOURCES))
 OUTPUT := ./build/lagosta
 BUILD_DIRS := $(sort $(dir $(OBJECTS)))
