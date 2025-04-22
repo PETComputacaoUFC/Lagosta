@@ -1,3 +1,4 @@
+#include "imgtools/filters.hpp"
 #include "raylib.h"
 #include "reader.hpp"
 
@@ -31,11 +32,12 @@ int main(void) {
     Image img1 = LoadImage("resources/scans_teste_oci/out0009.png");
     ImageFormat(&img1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     
-    Reader reader(&img1, SAMPLE_CIRCLE);
-    Reading answer = reader.read();
+    Reader reader{};
+    Reading answer = reader.read(img1);
     printf("%s\n", answer.answer_string.c_str());
     
-    Texture texture1 = LoadTextureFromImage(reader.image_filtered1);
+    reader.image_filter1(&img1);
+    Texture2D texture1 = LoadTextureFromImage(img1);
 
     Camera2D camera = {};
     camera.zoom = 0.8f;

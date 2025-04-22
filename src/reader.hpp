@@ -27,21 +27,17 @@ struct Reading {
 struct ReadingBox {};
 
 struct Reader {
-public:    
-    Image image;            // Grayscale image
-    Image image_filtered1;  // Inversion + contrast
-    Image image_filtered2;  // Threshold filter on top of filter 1
-    
+public:
     ReadMode read_mode;
-    
-    Reader();
-    Reader(Image* image, ReadMode read_mode);
-    
-    Reading read();
+
+
+    Reading read(Image image);
     void draw_reading(Reading reading);
-    
+    void image_filter1(Image *image);
+    void image_filter2(Image *image);
+
 private:
-    std::array<Vector2, 4> get_reading_rectangle();
-    float read_pixel(Image* image, int x, int y);
-    float read_area(Image* image, int x, int y);
+    std::array<Vector2, 4> get_reading_rectangle(Image image);
+    float read_pixel(Image image, int x, int y);
+    float read_area(Image image, int x, int y);
 };

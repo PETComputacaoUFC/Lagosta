@@ -36,33 +36,34 @@ const float DOUBLE_MARK_THRESHOLD = 0.1f;
 const float PIXEL_THRESHOLD = 0.4f;  // threshold that defines if a pixel is read as marked
 const float AREA_THRESHOLD = 0.6f;  // threshold that defines if a choice is considered as marked
 
-Reader::Reader() : image(nullptr), read_mode(SAMPLE_CIRCLE) {}
-
-Reader::Reader(Image* image, ReadMode read_mode) {
-    Image grayscale = ImageCopy(*image);
-    ImageFormat(&grayscale, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-
-    Image image_filtered1 = ImageCopy(*image);
-    ImagePow(&image_filtered1, 1.5);
-    ImageInvert(&image_filtered1);
-
-    Image image_filtered2 = ImageCopy(image_filtered1);
-    ImageThreshold(&image_filtered2, 60);
-    ImageErode(&image_filtered2, KERNEL_SIZE);
-    ImageDilate(&image_filtered2, KERNEL_SIZE);
-
-    this->image = grayscale;
-    this->image_filtered1 = image_filtered1;
-    this->image_filtered2 = image_filtered2;
-    this->read_mode = read_mode;
+void Reader::image_filter1(Image *image) {
+    ImagePow(image, 1.5);
+    ImageInvert(image);
 }
 
-Reading Reader::read() {
+void Reader::image_filter2(Image *image) {
+    ImagePow(image, 1.5);
+    ImageInvert(image);
+
+    ImageThreshold(image, 60);
+    ImageErode(image, KERNEL_SIZE);
+    ImageDilate(image, KERNEL_SIZE);
+}
+
+Reading Reader::read(Image image) {
+    Image grayscale = ImageCopy(image);
+    ImageFormat(&grayscale, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+
+    Image image_filtered1 = ImageCopy(grayscale);
+    Image image_filtered2 = ImageCopy(grayscale);
+    image_filter1(&image_filtered1);
+    image_filter2(&image_filtered2);
+
     Reading reading {};
     reading.answer_string.clear();
     reading.items.clear();
     
-    reading.rectangle = get_reading_rectangle();
+    reading.rectangle = get_reading_rectangle(image);
     std::array<Vector2, 4> rectangle = reading.rectangle;
 
     for (int i = 0; i < 10; i++) {
@@ -74,8 +75,8 @@ Reading Reader::read() {
             Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            float reading1 = read_area(&image_filtered1, center.x, center.y);
-            float reading2 = read_area(&image_filtered2, center.x, center.y);
+            float reading1 = read_area(image_filtered1, center.x, center.y);
+            float reading2 = read_area(image_filtered2, center.x, center.y);
             item.choice_readings[c] = lerp(reading1, reading2, CHOICE_LERP_T);
         }
         reading.items.push_back(item);
@@ -90,8 +91,8 @@ Reading Reader::read() {
             Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            float reading1 = read_area(&image_filtered1, center.x, center.y);
-            float reading2 = read_area(&image_filtered2, center.x, center.y);
+            float reading1 = read_area(image_filtered1, center.x, center.y);
+            float reading2 = read_area(image_filtered2, center.x, center.y);
             item.choice_readings[c] = lerp(reading1, reading2, CHOICE_LERP_T);
         }
         reading.items.push_back(item);
@@ -126,12 +127,12 @@ Reading Reader::read() {
 }
 
 // Retorna o valor do pixel entre 0 e 1
-float Reader::read_pixel(Image* image, int x, int y) {
-    int offset = x + image->width * y;
-    return ((float)((uint8_t*)image->data)[offset]) / 255.0f;
+float Reader::read_pixel(Image image, int x, int y) {
+    int offset = x + image.width * y;
+    return ((float)((uint8_t*)image.data)[offset]) / 255.0f;
 }
 
-float Reader::read_area(Image* image, int x, int y) {
+float Reader::read_area(Image image, int x, int y) {
     Vector2 center = {(float)x, (float)y};
     float reading = 0.0f;
     float read_count = 0.0f;
@@ -208,7 +209,7 @@ const Rectangle BLOCKS[4] = {
     {BLOCK_X2, BLOCK_Y2, BLOCK_WIDTH, BLOCK_HEIGHT},
 };
 
-std::array<Vector2, 4> Reader::get_reading_rectangle() {
+std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
     std::array<Vector2, 4> rectangle{};
     int block_counter = 0;
     for (Rectangle block_rect : BLOCKS) {
