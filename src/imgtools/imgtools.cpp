@@ -1,66 +1,139 @@
 #include "imgtools.hpp"
+
 #include "raylib.h"
-#include <algorithm>
-#include <cstdio>
-#include <cstdlib>
 
 float XDerivative(Image *image, int x, int y) {
-    if (x == 0) {
-        // forwards
-        return GetPixelF(image, x + 1, y) - GetPixelF(image, x, y);
-    } else if (x == image->width - 1) {
-        // backwards
-        return GetPixelF(image, x, y) - GetPixelF(image, x - 1, y);
-    }
-    // central
-    return (GetPixelF(image, x + 1, y) - GetPixelF(image, x - 1, y)) / 2.0f;
+    bool forwards = (x == 0);
+    bool backwards = (x == image->width - 1);
+    bool off1 = (forwards | !backwards);
+    bool off2 = (backwards | !forwards);
+
+    return (GetPixelF(image, x + off1, y) - GetPixelF(image, x - off2, y)) / (float)(off1 + off2);
 }
 
 float YDerivative(Image *image, int x, int y) {
-    if (y == 0) {
-        // forwards
-        return GetPixelF(image, x, y + 1) - GetPixelF(image, x, y);
-    } else if (y == image->height - 1) {
-        // backwards
-        return GetPixelF(image, x, y) - GetPixelF(image, x, y - 1);
-    }
-    // central
-    return (GetPixelF(image, x, y + 1) - GetPixelF(image, x, y - 1)) / 2.0f;
+    bool forwards = (y == 0);
+    bool backwards = (y == image->height - 1);
+    bool off1 = (forwards | !backwards);
+    bool off2 = (backwards | !forwards);
+
+    return (GetPixelF(image, x, y + off1) - GetPixelF(image, x, y - off2)) / (float)(off1 + off2);
 }
 
-GradientVector::GradientVector(float x, float y) {
-    this->x = x;
-    this->y = y;
-}
+PixelVector FilterImage(Image *image, std::function<bool(Pixel)> filter) {
+    uint8_t *img_data = (uint8_t *)image->data;
+    PixelVector v = {};
 
-GradientVector::GradientVector(Image *image, int x, int y) {
-    this->x = XDerivative(image, x, y);
-    this->y = YDerivative(image, x, y);
-}
-
-Gradient::Gradient(Image *image) {
-    width = image->width;
-    height = image->height;
-    data = (GradientVector*) malloc(width * height * sizeof(GradientVector));
     for (int y = 0; y < image->height; y++) {
         for (int x = 0; x < image->width; x++) {
-            data[width * y + x] = GradientVector(image, x, y);
+            Pixel pixel(x, y, img_data[x + y * image->width]);
+            if (filter(pixel)) {
+                v.push_back(pixel);
+            }
         }
     }
-    printf("\n");
+
+    return v;
 }
 
-Image Gradient::image() {
-    Image i = LoadImage("");
-    i.data = malloc(width * height); // unsigned char é tamanho 1 ent n importa o sizeof
-    i.width = width;
-    i.height = height;
-    i.mipmaps = 1;
-    i.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
+PixelVector FilterImageThreshold(Image *image, uint8_t threshold) {
+    uint8_t *img_data = (uint8_t *)image->data;
+    PixelVector v = {};
 
-    unsigned char *img_data = (unsigned char*) i.data;
-    for (int v = 0; v < width * height; v++) {
-        img_data[v] = (unsigned char) std::clamp(data[v].magnitude() * 255.0f, 0.0f, 255.0f);
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            uint8_t value = img_data[x + y * image->width];
+            if (value >= threshold) {
+                v.push_back({x, y, value});
+            }
+        }
     }
-    return i;
+
+    return v;
+}
+
+// Conta quantos pixels de uma imagem fazem parte de uma reta, dado um certo threshold
+int CountPixelsInLine(PixelVector const *pixel_vector, float const theta, float const rho,
+                      float const threshold) {
+    float t = DEG2RAD * theta;
+    float st = sinf(t), ct = cosf(t);
+
+    int count = 0;
+    for (Pixel pixel : *pixel_vector) {
+        if (pixel.value == 255 && std::abs(pixel.x * ct + pixel.y * st - rho) < threshold) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+// Constrói o espaço parâmetral de Hough
+void HoughParameterSpace::build_space(PixelVector const *pixel_vector, float threshold) {
+    data = (Line *)malloc(sizeof(Line) * width * height);
+    max = data;
+
+    float rho = range_rho.start;
+    for (int i = 0; i < height; i++) {
+        float theta = range_theta.start;
+
+        for (int j = 0; j < width; j++) {
+            int parameter = j + i * width;
+
+            int count = CountPixelsInLine(pixel_vector, theta, rho, threshold);
+            data[parameter] = {theta, rho, count};
+            if (count > max->count) {
+                max = &(data[parameter]);
+            }
+
+            theta += range_theta.step;
+        }
+
+        rho += range_rho.step;
+    }
+}
+
+// Cria uma imagem grayscale com base no espaço parametral.
+// branco = muitos pixels na linha; preto = poucos pixels
+Image HoughParameterSpace::image() {
+    uint8_t *img_data = (uint8_t *)malloc(width * height);
+    float max_count = (float)max->count;
+
+    for (int line = 0; line < width * height; line++) {
+        float pixel = ((float)data[line].count) / max_count;
+        img_data[line] = (uint8_t)(pixel * 255.0f);
+    }
+    return {img_data, width, height, 1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE};
+}
+
+// Construtores
+HoughParameterSpace::HoughParameterSpace(const PixelVector *pixel_vector, int diagonal,
+                                         float threshold)
+    : range_rho(0.0f, diagonal, DEFAULT_RHO_STEP),
+      width(range_theta.size()),
+      height(range_rho.size()) {
+    build_space(pixel_vector, threshold);
+}
+HoughParameterSpace::HoughParameterSpace(const PixelVector *pixel_vector, int diagonal,
+                                         Range theta_range, float rho_step, float threshold)
+    : range_theta(theta_range),
+      range_rho(0.0f, diagonal, rho_step),
+      width(range_theta.size()),
+      height(range_rho.size()) {
+    build_space(pixel_vector, threshold);
+}
+
+// Retorna o ponto de interseção entre duas retas.
+// Fórmula desenvolvida a partir da representação normal da reta:
+// x*cos(t) + y*sin(t) = p
+Vector2 IntersectionPoint(Line l1, Line l2) {
+    float p1 = l1.rho;
+    float p2 = l2.rho;
+    float t1 = DEG2RAD * l1.theta;
+    float t2 = DEG2RAD * l2.theta;
+
+    float x = (p2 * sinf(t1) - p1 * sinf(t2)) / sin(t1 - t2);
+    float y = (p2 * cosf(t1) - p1 * cosf(t2)) / sin(t2 - t1);
+
+    return {x, y};
 }
