@@ -1,4 +1,6 @@
 #include "raylib.h"
+#include "reader.hpp"
+
 #include <cstdio>
 #include <iostream>
 #define CLAY_IMPLEMENTATION
@@ -6,19 +8,25 @@
 #include "clay_renderer_raylib.c"
 #include "ZXing/ReadBarcode.h"
 
+
 void HandleClayErrors(Clay_ErrorData errorData) {
     printf("%s", errorData.errorText.chars);
 }
 
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
-    Clay_Raylib_Initialize(992, 699, "Lagosta", FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT); // Extra parameters to this function are new since the video was published
+    Clay_Raylib_Initialize(992, 699, "Lagosta",
+                           FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT
+                               | FLAG_VSYNC_HINT);  // Extra parameters to this function are new
+                                                    // since the video was published
     uint64_t clayRequiredMemory = Clay_MinMemorySize();
-    Clay_Arena clayMemoryTop = Clay_CreateArenaWithCapacityAndMemory(clayRequiredMemory, malloc(clayRequiredMemory));
-    Clay_Context *clayContextTop = Clay_Initialize(clayMemoryTop, (Clay_Dimensions) {
-       .width = (float) GetScreenWidth(),
-       .height = (float) GetScreenHeight()
-    }, (Clay_ErrorHandler) { HandleClayErrors }); // This final argument is new since the video was published
+    Clay_Arena clayMemoryTop =
+        Clay_CreateArenaWithCapacityAndMemory(clayRequiredMemory, malloc(clayRequiredMemory));
+    Clay_Initialize(
+        clayMemoryTop,
+        (Clay_Dimensions){.width = (float)GetScreenWidth(), .height = (float)GetScreenHeight()},
+        (Clay_ErrorHandler){
+            HandleClayErrors});  // This final argument is new since the video was published
 
     // ==== Resource importing ====
     Font fonts[1];

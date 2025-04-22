@@ -1,11 +1,14 @@
 #pragma once
+#include <array>
+#include <cstdint>
 #include <string>
 #include <vector>
+
 #include "raylib.h"
 
-enum ReadMode: unsigned char {
-    SAMPLE_SQUARE, // Averages a square with size 2*read_radius around the item's center.
-    SAMPLE_CIRCLE, // Averages a circle of radius read_radius around the item's center.
+enum ReadMode : uint8_t {
+    SAMPLE_SQUARE,  // Averages a square with size 2*read_radius around the item's center.
+    SAMPLE_CIRCLE,  // Averages a circle of radius read_radius around the item's center.
 };
 
 struct Item {
@@ -13,31 +16,35 @@ struct Item {
     std::vector<float> choice_readings;
 };
 
-// TODO: ReadingBox with coordinates instead of hard-coded values (see reader.cpp)
-struct ReadingBox {
-
+struct Reading {
+    std::string answer_string = "";
+    std::array<Vector2, 4> rectangle;
+    std::vector<Item> items = std::vector<Item>(20);  // questões
+    std::vector<Item> head = std::vector<Item>(2);    // cabeçalho: modalidade e fase
 };
+
+// TODO: ReadingBox with coordinates instead of hard-coded values (see reader.cpp)
+struct ReadingBox {};
 
 struct Reader {
 public:
-    std::string answer_string = "";
-    
-    Vector2 square[4];
-    
-    Image image; // Grayscale image
-    Image image_filtered1; // Inversion + contrast
-    Image image_filtered2; // Threshold filter on top of filter 1
-    
-    std::vector<Item> items = std::vector<Item>(20); // questões
-    std::vector<Item> head = std::vector<Item>(2);   // cabeçalho: modalidade e fase
-    
     ReadMode read_mode;
-    
-    Reader();
-    Reader(Image* image, Vector2 square[4], ReadMode read_mode);
 
-    std::string read();
+    int read_radius = 7;           // radius around the center of the item the reader will scan
+    float area_threshold = 0.6f;   // threshold that defines if a choice is considered as marked
+    float pixel_threshold = 0.4f;  // threshold that defines if a pixel is read as marked
+    float choice_lerp_t = 0.625f;  // weight of filters in reading (filter1=0.0, filter2=1.0)
+    float double_mark_threshold = 0.1f;  // difference between mark readings to count double mark
+
+    int filter2_kernel_size = 4;  // size of erode/dilate kernel used in filter 2
+
+    Reading read(Image image);
+    void draw_reading(Reading reading);
+    void image_filter1(Image *image);
+    void image_filter2(Image *image);
+
 private:
-    float read_pixel(Image* image, int x, int y);
-    float read_area(Image* image, int x, int y);
+    std::array<Vector2, 4> get_reading_rectangle(Image image);
+    float read_pixel(Image image, int x, int y);
+    float read_area(Image image, int x, int y);
 };
