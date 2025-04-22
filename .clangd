@@ -6,6 +6,5 @@ CompileFlags:
     Add:
         - "-Wall"
         - "-Wextra"
-        - "-Wno-unused-variable"
         - "-Wno-missing-field-initializers"
         - "-std=c++23"
