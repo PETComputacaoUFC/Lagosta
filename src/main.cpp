@@ -30,11 +30,11 @@ int main(void) {
 
     Image img1 = LoadImage("resources/scans_teste_oci/out0009.png");
     ImageFormat(&img1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-    
+
     Reader reader{};
     Reading answer = reader.read(img1);
     printf("%s\n", answer.answer_string.c_str());
-    
+
     reader.image_filter1(&img1);
     Texture2D texture1 = LoadTextureFromImage(img1);
 

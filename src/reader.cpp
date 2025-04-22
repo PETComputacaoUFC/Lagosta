@@ -1,4 +1,5 @@
 #include "reader.hpp"
+
 #include <array>
 
 #include "imgtools/filters.hpp"
@@ -52,10 +53,10 @@ Reading Reader::read(Image image) {
     image_filter1(&image_filtered1);
     image_filter2(&image_filtered2);
 
-    Reading reading {};
+    Reading reading{};
     reading.answer_string.clear();
     reading.items.clear();
-    
+
     reading.rectangle = get_reading_rectangle(image);
     std::array<Vector2, 4> rectangle = reading.rectangle;
 
@@ -91,7 +92,7 @@ Reading Reader::read(Image image) {
         reading.items.push_back(item);
     }
 
-    for (Item& item : reading.items) {
+    for (Item &item : reading.items) {
         char choice_id = '0';
         size_t choice_index = 0;
         float choice_value = -1.0f;
@@ -122,7 +123,7 @@ Reading Reader::read(Image image) {
 // Retorna o valor do pixel entre 0 e 1
 float Reader::read_pixel(Image image, int x, int y) {
     int offset = x + image.width * y;
-    return ((float)((uint8_t*)image.data)[offset]) / 255.0f;
+    return ((float)((uint8_t *)image.data)[offset]) / 255.0f;
 }
 
 float Reader::read_area(Image image, int x, int y) {
@@ -153,11 +154,11 @@ void Reader::draw_reading(Reading reading) {
     for (Vector2 corner : rectangle) {
         DrawCircleV(corner, 5.0f, RED);
     }
-    
+
     for (int i = 0; i < 10; i++) {
-        float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float) i;
+        float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float)i;
         for (int c = 0; c < 5; c++) {
-            float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float) c;
+            float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float)c;
             Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
             Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
@@ -170,17 +171,18 @@ void Reader::draw_reading(Reading reading) {
     }
 
     for (int i = 0; i < 10; i++) {
-        float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float) i;
+        float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float)i;
         for (int c = 0; c < 5; c++) {
-            float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float) c;
+            float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float)c;
             Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
             Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             char text[6];
-            sprintf(text, "%.2f", reading.items[i+10].choice_readings[c]);
+            sprintf(text, "%.2f", reading.items[i + 10].choice_readings[c]);
             DrawText(text, center.x, center.y, 20, YELLOW);
-            DrawCircleV(center, 5.0f, reading.items[i+10].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
+            DrawCircleV(center, 5.0f,
+                        reading.items[i + 10].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
         }
     }
 }
@@ -216,13 +218,10 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
         int diagonal = GetDiagonalLength(&block_img);
         PixelVector white_pixels = FilterImageThreshold(&block_img, 255);
 
-        HoughParameterSpace pspace_h(&white_pixels, diagonal,
-                                     THETA_RANGE_H, RHO_STEP, 0.5);
-        HoughParameterSpace pspace_v1(&white_pixels, diagonal,
-                                      THETA_RANGE_V1, RHO_STEP, 0.5);
-        HoughParameterSpace pspace_v2(&white_pixels, diagonal,
-                                      THETA_RANGE_V2, RHO_STEP, 0.5);
-        
+        HoughParameterSpace pspace_h(&white_pixels, diagonal, THETA_RANGE_H, RHO_STEP, 0.5);
+        HoughParameterSpace pspace_v1(&white_pixels, diagonal, THETA_RANGE_V1, RHO_STEP, 0.5);
+        HoughParameterSpace pspace_v2(&white_pixels, diagonal, THETA_RANGE_V2, RHO_STEP, 0.5);
+
         Line max_h = *pspace_h.max;
         Line max_v1 = *pspace_v1.max;
         Line max_v2 = *pspace_v2.max;
@@ -235,7 +234,7 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
         intersection.y += block_rect.y;
 
         rectangle[block_counter] = intersection;
-        
+
         block_counter++;
     }
 
