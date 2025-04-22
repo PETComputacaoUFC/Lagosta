@@ -30,6 +30,13 @@ struct Reader {
 public:
     ReadMode read_mode;
 
+    int read_radius = 7;           // radius around the center of the item the reader will scan
+    float area_threshold = 0.6f;   // threshold that defines if a choice is considered as marked
+    float pixel_threshold = 0.4f;  // threshold that defines if a pixel is read as marked
+    float choice_lerp_t = 0.625f;  // weight of filters in reading (filter1=0.0, filter2=1.0)
+    float double_mark_threshold = 0.1f;  // difference between mark readings to count double mark
+
+    int filter2_kernel_size = 4;  // size of erode/dilate kernel used in filter 2
 
     Reading read(Image image);
     void draw_reading(Reading reading);

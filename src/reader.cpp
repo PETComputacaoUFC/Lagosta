@@ -29,13 +29,6 @@ const float Y_ITEM_SPACING = 0.042f;
 
 const char ITEMS_STR[6] = "abcde";
 
-const int KERNEL_SIZE = 4;
-const int READ_RADIUS = 7;
-const float CHOICE_LERP_T = 0.625f;
-const float DOUBLE_MARK_THRESHOLD = 0.1f;
-const float PIXEL_THRESHOLD = 0.4f;  // threshold that defines if a pixel is read as marked
-const float AREA_THRESHOLD = 0.6f;  // threshold that defines if a choice is considered as marked
-
 void Reader::image_filter1(Image *image) {
     ImagePow(image, 1.5);
     ImageInvert(image);
@@ -46,8 +39,8 @@ void Reader::image_filter2(Image *image) {
     ImageInvert(image);
 
     ImageThreshold(image, 60);
-    ImageErode(image, KERNEL_SIZE);
-    ImageDilate(image, KERNEL_SIZE);
+    ImageErode(image, filter2_kernel_size);
+    ImageDilate(image, filter2_kernel_size);
 }
 
 Reading Reader::read(Image image) {
@@ -77,7 +70,7 @@ Reading Reader::read(Image image) {
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             float reading1 = read_area(image_filtered1, center.x, center.y);
             float reading2 = read_area(image_filtered2, center.x, center.y);
-            item.choice_readings[c] = lerp(reading1, reading2, CHOICE_LERP_T);
+            item.choice_readings[c] = lerp(reading1, reading2, choice_lerp_t);
         }
         reading.items.push_back(item);
     }
@@ -93,7 +86,7 @@ Reading Reader::read(Image image) {
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             float reading1 = read_area(image_filtered1, center.x, center.y);
             float reading2 = read_area(image_filtered2, center.x, center.y);
-            item.choice_readings[c] = lerp(reading1, reading2, CHOICE_LERP_T);
+            item.choice_readings[c] = lerp(reading1, reading2, choice_lerp_t);
         }
         reading.items.push_back(item);
     }
@@ -105,7 +98,7 @@ Reading Reader::read(Image image) {
 
         for (size_t choice = 0; choice < item.choice_readings.size(); choice++) {
             float reading = item.choice_readings[choice];
-            if (reading > AREA_THRESHOLD && reading > choice_value) {
+            if (reading > area_threshold && reading > choice_value) {
                 choice_id = ITEMS_STR[choice];
                 choice_index = choice;
                 choice_value = reading;
@@ -115,7 +108,7 @@ Reading Reader::read(Image image) {
         // anula a questão caso um item tenha mais de uma marcação
         for (size_t choice = 0; choice < item.choice_readings.size(); choice++) {
             if (choice != choice_index
-                && abs(choice_value - item.choice_readings[choice]) <= DOUBLE_MARK_THRESHOLD) {
+                && abs(choice_value - item.choice_readings[choice]) <= double_mark_threshold) {
                 choice_id = 'X';
                 break;
             }
@@ -137,16 +130,16 @@ float Reader::read_area(Image image, int x, int y) {
     float reading = 0.0f;
     float read_count = 0.0f;
 
-    for (int r_x = -READ_RADIUS; r_x <= READ_RADIUS; r_x++) {
-        for (int r_y = -READ_RADIUS; r_y <= READ_RADIUS; r_y++) {
+    for (int r_x = -read_radius; r_x <= read_radius; r_x++) {
+        for (int r_y = -read_radius; r_y <= read_radius; r_y++) {
             Vector2 read_coords = {(float)(x + r_x), (float)(y + r_y)};
-            if (read_mode == SAMPLE_CIRCLE && Vector2Distance(center, read_coords) > READ_RADIUS) {
+            if (read_mode == SAMPLE_CIRCLE && Vector2Distance(center, read_coords) > read_radius) {
                 continue;
             }
 
             read_count += 1.0f;
             float pixel = read_pixel(image, read_coords.x, read_coords.y);
-            if (pixel >= PIXEL_THRESHOLD) {
+            if (pixel >= pixel_threshold) {
                 reading += pixel;
             }
         }
