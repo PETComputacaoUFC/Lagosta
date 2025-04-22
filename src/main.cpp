@@ -1,6 +1,5 @@
 #include "raylib.h"
 #include "reader.hpp"
-#include "readertools.hpp"
 
 #define CLAY_IMPLEMENTATION
 #include "clay.h"
@@ -32,9 +31,7 @@ int main(void) {
     Image img1 = LoadImage("resources/scans_teste_oci/out0009.png");
     ImageFormat(&img1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     
-    std::array<Vector2, 4> corners = GetCorners(&img1);
-    
-    Reader reader(&img1, corners.data(), SAMPLE_CIRCLE);
+    Reader reader(&img1, SAMPLE_CIRCLE);
     std::string answer = reader.read();
     printf("%s\n", answer.c_str());
     
