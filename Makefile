@@ -1,5 +1,5 @@
 ############### PROJECT CONFIG ###############
-CXX := g++
+CXX ?= g++
 CXXFLAGS := -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-variable \
 		 -Iinclude -std=c++23 -O2
 LDFLAGS := -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -Llibs

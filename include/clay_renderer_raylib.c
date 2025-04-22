@@ -7,7 +7,7 @@
 #include "stdlib.h"
 
 #define CLAY_RECTANGLE_TO_RAYLIB_RECTANGLE(rectangle) (Rectangle) { .x = rectangle.x, .y = rectangle.y, .width = rectangle.width, .height = rectangle.height }
-#define CLAY_COLOR_TO_RAYLIB_COLOR(color) (Color) { .r = (unsigned char)roundf(color.r), .g = (unsigned char)roundf(color.g), .b = (unsigned char)roundf(color.b), .a = (unsigned char)roundf(color.a) }
+#define CLAY_COLOR_TO_RAYLIB_COLOR(color) (Color) { .r = (uint8_t)roundf(color.r), .g = (uint8_t)roundf(color.g), .b = (uint8_t)roundf(color.b), .a = (uint8_t)roundf(color.a) }
 
 Camera Raylib_camera;
 
@@ -35,7 +35,7 @@ typedef struct
 // Get a ray trace from the screen position (i.e mouse) within a specific section of the screen
 Ray GetScreenToWorldPointWithZDistance(Vector2 position, Camera camera, int screenWidth, int screenHeight, float zDistance)
 {
-    Ray ray = { 0 };
+    Ray ray = {};
 
     // Calculate normalized device coordinates
     // NOTE: y value is negative

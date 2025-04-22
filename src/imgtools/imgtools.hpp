@@ -1,54 +1,49 @@
 #pragma once
-#include "raylib.h"
+#include <sys/types.h>
+
 #include <cmath>
-#include <cstdlib>
+#include <cstdint>
+#include <functional>
+#include <vector>
 
-struct GradientVector {
-    float x;
-    float y;
+#include "raylib.h"
 
-    GradientVector(float x, float y);
-    GradientVector(Image *image, int x, int y);
+struct Range {
+    float start = 0.0f;
+    float end;
+    float step = 1.0f;
 
-    inline float magnitude() { return sqrt(x*x + y*y); }
-    inline float fast_magnitude() { return std::abs(x) + std::abs(y); }
+    inline int size() const { return std::abs((end - start + step) / step); }
 };
 
-struct Gradient {
-    GradientVector *data;
-    int width, height;
-
-    Gradient(Image *image);
-
-    Image image();
-
-    // unsafe getter
-    inline GradientVector *operator[](int y) {
-        return data + y * width * sizeof(GradientVector);
-    }
-    // safe getter
-    inline GradientVector at(int x, int y) {
-        if (static_cast<unsigned>(x) >= static_cast<unsigned>(width)
-        || static_cast<unsigned>(y) >= static_cast<unsigned>(height)) {
-            return GradientVector { 0.0f, 0.0f };
-        }
-        return data[x + y * width];
-    };
+struct Pixel {
+    int x;
+    int y;
+    uint8_t value;
 };
 
+typedef std::vector<Pixel> PixelVector;
 
-// unsafe getter
+PixelVector FilterImage(Image *image, std::function<bool(Pixel)>);
+
+PixelVector FilterImageThreshold(Image *image, uint8_t threshold);
+
+void ImageNormalizedGradient(Image *image);
+
 inline unsigned char GetPixel(Image *image, int x, int y) {
-    return ((unsigned char*)image->data)[x + y * image->width];
+    return ((unsigned char *)image->data)[x + y * image->width];
 }
-// safe getter
 inline unsigned char GetPixelSafe(Image *image, int x, int y) {
     if (static_cast<unsigned>(x) >= static_cast<unsigned>(image->width)
-    || static_cast<unsigned>(y) >= static_cast<unsigned>(image->height)) {
+        || static_cast<unsigned>(y) >= static_cast<unsigned>(image->height)) {
         return 0;
     }
-    return ((unsigned char*)image->data)[x + y * image->width];
+    return ((unsigned char *)image->data)[x + y * image->width];
 }
 
-inline float GetPixelF(Image *image, int x, int y) { return ((float) GetPixel(image, x, y)) / 255.0f; }
-inline float GetPixelFSafe(Image *image, int x, int y) { return ((float) GetPixelSafe(image, x, y)) / 255.0f; }
+inline float GetPixelF(Image *image, int x, int y) {
+    return ((float)GetPixel(image, x, y)) / 255.0f;
+}
+inline float GetPixelFSafe(Image *image, int x, int y) {
+    return ((float)GetPixelSafe(image, x, y)) / 255.0f;
+}

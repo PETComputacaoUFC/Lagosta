@@ -1,8 +1,7 @@
 #include "reader.hpp"
 
-#include "raymath.h"
-
 #include "imgtools/filters.hpp"
+#include "raymath.h"
 
 // base.png COORDS:
 // square:  63, 63  -->  1260, 869  |  (1197x806)
@@ -31,20 +30,21 @@ const int KERNEL_SIZE = 4;
 const int READ_RADIUS = 7;
 const float CHOICE_LERP_T = 0.625f;
 const float DOUBLE_MARK_THRESHOLD = 0.1f;
-const float PIXEL_THRESHOLD = 0.4f; // threshold that defines if a pixel is read as marked or not
-const float AREA_THRESHOLD = 0.6f;  // threshold that defines if a choice is considered as marked or not
+const float PIXEL_THRESHOLD = 0.4f;  // threshold that defines if a pixel is read as marked or not
+const float AREA_THRESHOLD =
+    0.6f;  // threshold that defines if a choice is considered as marked or not
 
 Reader::Reader() : image(nullptr), read_mode(SAMPLE_CIRCLE) {
-    square[0] = { 63, 63 };
-    square[1] = { 1260, 63 };
-    square[2] = { 63, 869 };
-    square[3] = { 1260, 869 };
+    square[0] = {63, 63};
+    square[1] = {1260, 63};
+    square[2] = {63, 869};
+    square[3] = {1260, 869};
 }
 
 Reader::Reader(Image* image, Vector2 square[4], ReadMode read_mode) {
     Image grayscale = ImageCopy(*image);
     ImageFormat(&grayscale, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-    
+
     Image image_filtered1 = ImageCopy(*image);
     ImagePow(&image_filtered1, 1.5);
     ImageInvert(&image_filtered1);
@@ -58,8 +58,10 @@ Reader::Reader(Image* image, Vector2 square[4], ReadMode read_mode) {
     this->image_filtered1 = image_filtered1;
     this->image_filtered2 = image_filtered2;
     this->read_mode = read_mode;
-    
-    for (int i = 0; i < 4; i++) { this->square[i] = square[i]; }
+
+    for (int i = 0; i < 4; i++) {
+        this->square[i] = square[i];
+    }
 }
 
 std::string Reader::read() {
@@ -68,9 +70,9 @@ std::string Reader::read() {
 
     for (int i = 0; i < 10; i++) {
         Item item = {-1, std::vector<float>(5)};
-        float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float) i;
+        float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float)i;
         for (int c = 0; c < 5; c++) {
-            float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float) c;
+            float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float)c;
             Vector2 v1 = Vector2Lerp(square[0], square[1], x_lerp_amount);
             Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
 
@@ -84,9 +86,9 @@ std::string Reader::read() {
 
     for (int i = 0; i < 10; i++) {
         Item item = {-1, std::vector<float>(5)};
-        float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float) i;
+        float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float)i;
         for (int c = 0; c < 5; c++) {
-            float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float) c;
+            float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float)c;
             Vector2 v1 = Vector2Lerp(square[0], square[1], x_lerp_amount);
             Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
 
@@ -114,7 +116,8 @@ std::string Reader::read() {
 
         // anula a questão caso um item tenha mais de uma marcação
         for (size_t choice = 0; choice < item.choice_readings.size(); choice++) {
-            if (choice != choice_index && abs(choice_value - item.choice_readings[choice]) <= DOUBLE_MARK_THRESHOLD) {
+            if (choice != choice_index
+                && abs(choice_value - item.choice_readings[choice]) <= DOUBLE_MARK_THRESHOLD) {
                 choice_id = 'X';
                 break;
             }
@@ -128,24 +131,26 @@ std::string Reader::read() {
 // Retorna o valor do pixel entre 0 e 1
 float Reader::read_pixel(Image* image, int x, int y) {
     int offset = x + image->width * y;
-    return ( (float) ((unsigned char*) image->data)[offset] ) / 255.0f;
+    return ((float)((uint8_t*)image->data)[offset]) / 255.0f;
 }
 
 float Reader::read_area(Image* image, int x, int y) {
-    Vector2 center = { (float) x, (float) y };
+    Vector2 center = {(float)x, (float)y};
     float reading = 0.0f;
     float read_count = 0.0f;
 
     for (int r_x = -READ_RADIUS; r_x <= READ_RADIUS; r_x++) {
         for (int r_y = -READ_RADIUS; r_y <= READ_RADIUS; r_y++) {
-            Vector2 read_coords = {(float) (x + r_x), (float) (y + r_y) };
-            if (read_mode == SAMPLE_CIRCLE && Vector2Distance(center, read_coords) > READ_RADIUS ) {
+            Vector2 read_coords = {(float)(x + r_x), (float)(y + r_y)};
+            if (read_mode == SAMPLE_CIRCLE && Vector2Distance(center, read_coords) > READ_RADIUS) {
                 continue;
             }
 
             read_count += 1.0f;
             float pixel = read_pixel(image, read_coords.x, read_coords.y);
-            if (pixel >= PIXEL_THRESHOLD) { reading += pixel; }
+            if (pixel >= PIXEL_THRESHOLD) {
+                reading += pixel;
+            }
         }
     }
 

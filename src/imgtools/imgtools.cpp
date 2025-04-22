@@ -1,66 +1,75 @@
 #include "imgtools.hpp"
-#include "raylib.h"
+
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
+
+#include "raylib.h"
 
 float XDerivative(Image *image, int x, int y) {
-    if (x == 0) {
-        // forwards
-        return GetPixelF(image, x + 1, y) - GetPixelF(image, x, y);
-    } else if (x == image->width - 1) {
-        // backwards
-        return GetPixelF(image, x, y) - GetPixelF(image, x - 1, y);
-    }
-    // central
-    return (GetPixelF(image, x + 1, y) - GetPixelF(image, x - 1, y)) / 2.0f;
+    bool forwards = (x == 0);
+    bool backwards = (x == image->width - 1);
+    bool off1 = (forwards | !backwards);
+    bool off2 = (backwards | !forwards);
+
+    return (GetPixelF(image, x + off1, y) - GetPixelF(image, x - off2, y)) / (float)(off1 + off2);
 }
 
 float YDerivative(Image *image, int x, int y) {
-    if (y == 0) {
-        // forwards
-        return GetPixelF(image, x, y + 1) - GetPixelF(image, x, y);
-    } else if (y == image->height - 1) {
-        // backwards
-        return GetPixelF(image, x, y) - GetPixelF(image, x, y - 1);
-    }
-    // central
-    return (GetPixelF(image, x, y + 1) - GetPixelF(image, x, y - 1)) / 2.0f;
+    bool forwards = (y == 0);
+    bool backwards = (y == image->height - 1);
+    bool off1 = (forwards | !backwards);
+    bool off2 = (backwards | !forwards);
+
+    return (GetPixelF(image, x, y + off1) - GetPixelF(image, x, y - off2)) / (float)(off1 + off2);
 }
 
-GradientVector::GradientVector(float x, float y) {
-    this->x = x;
-    this->y = y;
-}
+inline float Magnitude(float x, float y) { return sqrtf(x * x + y * y); }
 
-GradientVector::GradientVector(Image *image, int x, int y) {
-    this->x = XDerivative(image, x, y);
-    this->y = YDerivative(image, x, y);
-}
+PixelVector FilterImage(Image *image, std::function<bool(Pixel)> filter) {
+    uint8_t *img_data = (uint8_t *)image->data;
+    PixelVector v = {};
 
-Gradient::Gradient(Image *image) {
-    width = image->width;
-    height = image->height;
-    data = (GradientVector*) malloc(width * height * sizeof(GradientVector));
     for (int y = 0; y < image->height; y++) {
         for (int x = 0; x < image->width; x++) {
-            data[width * y + x] = GradientVector(image, x, y);
+            Pixel pixel(x, y, img_data[x + y * image->width]);
+            if (filter(pixel)) {
+                v.push_back(pixel);
+            }
         }
     }
-    printf("\n");
+
+    return v;
 }
 
-Image Gradient::image() {
-    Image i = LoadImage("");
-    i.data = malloc(width * height); // unsigned char é tamanho 1 ent n importa o sizeof
-    i.width = width;
-    i.height = height;
-    i.mipmaps = 1;
-    i.format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
+PixelVector FilterImageThreshold(Image *image, uint8_t threshold) {
+    uint8_t *img_data = (uint8_t *)image->data;
+    PixelVector v = {};
 
-    unsigned char *img_data = (unsigned char*) i.data;
-    for (int v = 0; v < width * height; v++) {
-        img_data[v] = (unsigned char) std::clamp(data[v].magnitude() * 255.0f, 0.0f, 255.0f);
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            uint8_t value = img_data[x + y * image->width];
+            if (value >= threshold) {
+                v.push_back({x, y, value});
+            }
+        }
     }
-    return i;
+
+    return v;
+}
+
+// Gera o gradiente de uma imagem normalizado entre 0 e 1 (0 e 255)
+void ImageNormalizedGradient(Image *image) {
+    // não podemos fazer a modificação in-place, uma iteração vai afetar o resultado da outra.
+    uint8_t *grad_data = (uint8_t *)malloc(image->width * image->height);
+
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            int pixel = x + y * image->width;
+            float dx = XDerivative(image, x, y);
+            float dy = YDerivative(image, x, y);
+            grad_data[pixel] = (uint8_t)std::clamp(Magnitude(dx, dy) * 255.0f, 0.0f, 255.0f);
+        }
+    }
+
+    free(image->data);
+    image->data = grad_data;
 }
