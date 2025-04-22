@@ -32,8 +32,8 @@ int main(void) {
     ImageFormat(&img1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     
     Reader reader(&img1, SAMPLE_CIRCLE);
-    std::string answer = reader.read();
-    printf("%s\n", answer.c_str());
+    Reading answer = reader.read();
+    printf("%s\n", answer.answer_string.c_str());
     
     Texture texture1 = LoadTextureFromImage(reader.image_filtered1);
 
@@ -47,7 +47,7 @@ int main(void) {
         BeginMode2D(camera);
 
         DrawTexture(texture1, 0, 0, WHITE);
-        reader.draw_reading();
+        reader.draw_reading(answer);
 
         EndMode2D();
         EndDrawing();

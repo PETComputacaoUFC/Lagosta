@@ -1,11 +1,13 @@
 #include "reader.hpp"
+#include <array>
 
 #include "imgtools/filters.hpp"
 #include "imgtools/imgtools.hpp"
+#include "raylib.h"
 #include "raymath.h"
 
 // base.png COORDS:
-// square:  63, 63  -->  1260, 869  |  (1197x806)
+// rectangle:  63, 63  -->  1260, 869  |  (1197x806)
 // q01a:  293, 520  |  q11a:  631, 520
 // modalidade:  948, 520  |  fase:  977, 588
 // horizontal spacing: 57  |  vertical spacing: 34
@@ -14,7 +16,7 @@
 // q01a: 230, 457  |  q11a: 568, 457
 // modalidade: 885, 457  |  fase:  914, 525
 //
-// as percentages of the square (USE THESE VALUES IN Vector2Lerp):
+// as percentages of the rectangle (USE THESE VALUES IN Vector2Lerp):
 // q01a:  0.192147034, 0.566997519  |  q11a:  0.474519632, 0.566997519
 // modalidade:  0.7393448371, 0.566997519  |  fase:  0.763575606, 0.651364764
 // horizontal spacing: 0.04735  |  vertical spacing: 0.042
@@ -34,12 +36,7 @@ const float DOUBLE_MARK_THRESHOLD = 0.1f;
 const float PIXEL_THRESHOLD = 0.4f;  // threshold that defines if a pixel is read as marked
 const float AREA_THRESHOLD = 0.6f;  // threshold that defines if a choice is considered as marked
 
-Reader::Reader() : image(nullptr), read_mode(SAMPLE_CIRCLE) {
-    square[0] = {63, 63};
-    square[1] = {1260, 63};
-    square[2] = {63, 869};
-    square[3] = {1260, 869};
-}
+Reader::Reader() : image(nullptr), read_mode(SAMPLE_CIRCLE) {}
 
 Reader::Reader(Image* image, ReadMode read_mode) {
     Image grayscale = ImageCopy(*image);
@@ -58,28 +55,30 @@ Reader::Reader(Image* image, ReadMode read_mode) {
     this->image_filtered1 = image_filtered1;
     this->image_filtered2 = image_filtered2;
     this->read_mode = read_mode;
-
-    get_image_corners();
 }
 
-std::string Reader::read() {
-    answer_string.clear();
-    items.clear();
+Reading Reader::read() {
+    Reading reading {};
+    reading.answer_string.clear();
+    reading.items.clear();
+    
+    reading.rectangle = get_reading_rectangle();
+    std::array<Vector2, 4> rectangle = reading.rectangle;
 
     for (int i = 0; i < 10; i++) {
         Item item = {-1, std::vector<float>(5)};
         float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float)i;
         for (int c = 0; c < 5; c++) {
             float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float)c;
-            Vector2 v1 = Vector2Lerp(square[0], square[1], x_lerp_amount);
-            Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
+            Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
+            Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             float reading1 = read_area(&image_filtered1, center.x, center.y);
             float reading2 = read_area(&image_filtered2, center.x, center.y);
             item.choice_readings[c] = lerp(reading1, reading2, CHOICE_LERP_T);
         }
-        items.push_back(item);
+        reading.items.push_back(item);
     }
 
     for (int i = 0; i < 10; i++) {
@@ -87,18 +86,18 @@ std::string Reader::read() {
         float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float)i;
         for (int c = 0; c < 5; c++) {
             float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float)c;
-            Vector2 v1 = Vector2Lerp(square[0], square[1], x_lerp_amount);
-            Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
+            Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
+            Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             float reading1 = read_area(&image_filtered1, center.x, center.y);
             float reading2 = read_area(&image_filtered2, center.x, center.y);
             item.choice_readings[c] = lerp(reading1, reading2, CHOICE_LERP_T);
         }
-        items.push_back(item);
+        reading.items.push_back(item);
     }
 
-    for (Item& item : items) {
+    for (Item& item : reading.items) {
         char choice_id = '0';
         size_t choice_index = 0;
         float choice_value = -1.0f;
@@ -121,9 +120,9 @@ std::string Reader::read() {
             }
         }
         item.choice = choice_id;
-        answer_string.append(&item.choice);
+        reading.answer_string.append(&item.choice);
     }
-    return answer_string;
+    return reading;
 }
 
 // Retorna o valor do pixel entre 0 e 1
@@ -155,8 +154,9 @@ float Reader::read_area(Image* image, int x, int y) {
     return reading / read_count;
 }
 
-void Reader::draw_reading() {
-    for (Vector2 corner : square) {
+void Reader::draw_reading(Reading reading) {
+    std::array<Vector2, 4> rectangle = reading.rectangle;
+    for (Vector2 corner : rectangle) {
         DrawCircleV(corner, 5.0f, RED);
     }
     
@@ -164,14 +164,14 @@ void Reader::draw_reading() {
         float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float) i;
         for (int c = 0; c < 5; c++) {
             float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float) c;
-            Vector2 v1 = Vector2Lerp(square[0], square[1], x_lerp_amount);
-            Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
+            Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
+            Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             char text[6];
-            sprintf(text, "%.2f", items[i].choice_readings[c]);
+            sprintf(text, "%.2f", reading.items[i].choice_readings[c]);
             DrawText(text, center.x, center.y, 20, YELLOW);
-            DrawCircleV(center, 5.0f, items[i].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
+            DrawCircleV(center, 5.0f, reading.items[i].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
         }
     }
 
@@ -179,14 +179,14 @@ void Reader::draw_reading() {
         float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float) i;
         for (int c = 0; c < 5; c++) {
             float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float) c;
-            Vector2 v1 = Vector2Lerp(square[0], square[1], x_lerp_amount);
-            Vector2 v2 = Vector2Lerp(square[2], square[3], x_lerp_amount);
+            Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
+            Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             char text[6];
-            sprintf(text, "%.2f", items[i+10].choice_readings[c]);
+            sprintf(text, "%.2f", reading.items[i+10].choice_readings[c]);
             DrawText(text, center.x, center.y, 20, YELLOW);
-            DrawCircleV(center, 5.0f, items[i+10].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
+            DrawCircleV(center, 5.0f, reading.items[i+10].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
         }
     }
 }
@@ -208,7 +208,8 @@ const Rectangle BLOCKS[4] = {
     {BLOCK_X2, BLOCK_Y2, BLOCK_WIDTH, BLOCK_HEIGHT},
 };
 
-void Reader::get_image_corners() {
+std::array<Vector2, 4> Reader::get_reading_rectangle() {
+    std::array<Vector2, 4> rectangle{};
     int block_counter = 0;
     for (Rectangle block_rect : BLOCKS) {
         Image block_img = ImageCopy(image);
@@ -239,8 +240,10 @@ void Reader::get_image_corners() {
         intersection.x += block_rect.x;
         intersection.y += block_rect.y;
 
-        square[block_counter] = intersection;
+        rectangle[block_counter] = intersection;
         
         block_counter++;
     }
+
+    return rectangle;
 }
