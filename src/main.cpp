@@ -37,7 +37,7 @@ int main(void) {
     // ImageResize(&img1, 331, 233);
     ImageNormalizedGradient(&img1);
     ImageThreshold(&img1, 20);
-    
+
     Range angle_range = {-90.0f, 90.0f, 1.0f};
 
     int diagonal = GetDiagonal(&img1);
@@ -46,10 +46,10 @@ int main(void) {
     HoughParameterSpace pspace(&pv, diagonal, angle_range, 1.0, 1.0);
     printf("width: %d, height: %d\n", pspace.width, pspace.height);
     printf("max: theta: %.2f, rho: %.2f, %d\n", pspace.max->theta, pspace.max->rho,
-        pspace.max->count);
+           pspace.max->count);
     Image pspace_img = pspace.image();
-        
-    ImageResize(&pspace_img, pspace_img.width*2, pspace_img.height);
+
+    ImageResize(&pspace_img, pspace_img.width * 2, pspace_img.height);
     Texture texture = LoadTextureFromImage(img1);
     Texture texture2 = LoadTextureFromImage(pspace_img);
 
@@ -61,9 +61,9 @@ int main(void) {
         BeginDrawing();
         ClearBackground(BLACK);
         BeginMode2D(camera);
-        
-            DrawTexture(texture, 0, 0, WHITE);
-            DrawTexture(texture2, texture.width, 0, WHITE);
+
+        DrawTexture(texture, 0, 0, WHITE);
+        DrawTexture(texture2, texture.width, 0, WHITE);
 
         EndMode2D();
         EndDrawing();
