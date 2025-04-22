@@ -31,26 +31,21 @@ const float Y_ITEM_SPACING = 0.042f;
 const char ITEMS_STR[6] = "abcde";
 
 void Reader::image_filter1(Image *image) {
+    ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     ImagePow(image, 1.5);
-    ImageInvert(image);
+    ImageColorInvertFast(image);
 }
 
 void Reader::image_filter2(Image *image) {
-    ImagePow(image, 1.5);
-    ImageInvert(image);
-
     ImageThreshold(image, 60);
-    ImageErode(image, filter2_kernel_size);
-    ImageDilate(image, filter2_kernel_size);
+    ImageErode(image, filter2_kernel_radius);
+    ImageDilate(image, filter2_kernel_radius);
 }
 
 Reading Reader::read(Image image) {
-    Image grayscale = ImageCopy(image);
-    ImageFormat(&grayscale, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-
-    Image image_filtered1 = ImageCopy(grayscale);
-    Image image_filtered2 = ImageCopy(grayscale);
+    Image image_filtered1 = ImageCopy(image);
     image_filter1(&image_filtered1);
+    Image image_filtered2 = ImageCopy(image_filtered1);
     image_filter2(&image_filtered2);
 
     Reading reading{};
@@ -117,6 +112,9 @@ Reading Reader::read(Image image) {
         item.choice = choice_id;
         reading.answer_string.append(&item.choice);
     }
+
+    UnloadImage(image_filtered1);
+    UnloadImage(image_filtered2);
     return reading;
 }
 
@@ -191,6 +189,7 @@ const Range THETA_RANGE_H = {-20.0f, 20.0f, 1.0f};
 const Range THETA_RANGE_V1 = {-90.0f, -70.0f, 1.0f};
 const Range THETA_RANGE_V2 = {70.0f, 90.0f, 1.0f};
 const float RHO_STEP = 1.0f;
+const float HOUGH_THRESHOLD = 0.5f;
 
 const int BLOCK_WIDTH = 116;
 const int BLOCK_HEIGHT = 116;
@@ -215,12 +214,15 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
         ImageNormalizedGradient(&block_img);
         ImageThreshold(&block_img, 1);
 
-        int diagonal = GetDiagonalLength(&block_img);
-        PixelVector white_pixels = FilterImageThreshold(&block_img, 255);
+        int diagonal = GetDiagonalLength(block_img);
+        PixelVector white_pixels = FilterImageThreshold(block_img, 255);
 
-        HoughParameterSpace pspace_h(&white_pixels, diagonal, THETA_RANGE_H, RHO_STEP, 0.5);
-        HoughParameterSpace pspace_v1(&white_pixels, diagonal, THETA_RANGE_V1, RHO_STEP, 0.5);
-        HoughParameterSpace pspace_v2(&white_pixels, diagonal, THETA_RANGE_V2, RHO_STEP, 0.5);
+        HoughParameterSpace pspace_h(white_pixels, diagonal, THETA_RANGE_H, RHO_STEP,
+                                     HOUGH_THRESHOLD);
+        HoughParameterSpace pspace_v1(white_pixels, diagonal, THETA_RANGE_V1, RHO_STEP,
+                                      HOUGH_THRESHOLD);
+        HoughParameterSpace pspace_v2(white_pixels, diagonal, THETA_RANGE_V2, RHO_STEP,
+                                      HOUGH_THRESHOLD);
 
         Line max_h = *pspace_h.max;
         Line max_v1 = *pspace_v1.max;

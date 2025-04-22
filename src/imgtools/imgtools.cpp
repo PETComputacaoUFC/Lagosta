@@ -1,23 +1,48 @@
 #include "imgtools.hpp"
 
+#include <mutex>
+#include <thread>
+
 #include "raylib.h"
 
-float XDerivative(Image *image, int x, int y) {
+const int MAX_THREADS = std::thread::hardware_concurrency();
+
+float XDerivative(Image image, int x, int y) {
     bool forwards = (x == 0);
-    bool backwards = (x == image->width - 1);
+    bool backwards = (x == image.width - 1);
     bool off1 = (forwards | !backwards);
     bool off2 = (backwards | !forwards);
 
     return (GetPixelF(image, x + off1, y) - GetPixelF(image, x - off2, y)) / (float)(off1 + off2);
 }
 
-float YDerivative(Image *image, int x, int y) {
+float YDerivative(Image image, int x, int y) {
     bool forwards = (y == 0);
-    bool backwards = (y == image->height - 1);
+    bool backwards = (y == image.height - 1);
     bool off1 = (forwards | !backwards);
     bool off2 = (backwards | !forwards);
 
     return (GetPixelF(image, x, y + off1) - GetPixelF(image, x, y - off2)) / (float)(off1 + off2);
+}
+
+// Wrapper de processamento multithreading
+void DoThreaded(std::function<void(int start, int end)> lambda, int elements) {
+    int thread_elements = elements / MAX_THREADS;
+    int start_element = 0;
+    int end_element = thread_elements;
+    std::vector<std::thread> threads;
+    for (int i = 0; i < MAX_THREADS; i++) {
+        if (i == MAX_THREADS - 1) {
+            end_element = elements;
+        }
+        threads.push_back(std::thread(lambda, start_element, end_element));
+        start_element = end_element;
+        end_element += thread_elements;
+    }
+
+    for (size_t i = 0; i < threads.size(); i++) {
+        threads[i].join();
+    }
 }
 
 PixelVector FilterImage(Image *image, std::function<bool(Pixel)> filter) {
@@ -36,13 +61,13 @@ PixelVector FilterImage(Image *image, std::function<bool(Pixel)> filter) {
     return v;
 }
 
-PixelVector FilterImageThreshold(Image *image, uint8_t threshold) {
-    uint8_t *img_data = (uint8_t *)image->data;
+PixelVector FilterImageThreshold(Image image, uint8_t threshold) {
+    uint8_t *img_data = (uint8_t *)image.data;
     PixelVector v = {};
 
-    for (int y = 0; y < image->height; y++) {
-        for (int x = 0; x < image->width; x++) {
-            uint8_t value = img_data[x + y * image->width];
+    for (int y = 0; y < image.height; y++) {
+        for (int x = 0; x < image.width; x++) {
+            uint8_t value = img_data[x + y * image.width];
             if (value >= threshold) {
                 v.push_back({x, y, value});
             }
@@ -53,13 +78,13 @@ PixelVector FilterImageThreshold(Image *image, uint8_t threshold) {
 }
 
 // Conta quantos pixels de uma imagem fazem parte de uma reta, dado um certo threshold
-int CountPixelsInLine(PixelVector const *pixel_vector, float const theta, float const rho,
+int CountPixelsInLine(PixelVector pixel_vector, float const theta, float const rho,
                       float const threshold) {
     float t = DEG2RAD * theta;
     float st = sinf(t), ct = cosf(t);
 
     int count = 0;
-    for (Pixel pixel : *pixel_vector) {
+    for (Pixel pixel : pixel_vector) {
         if (pixel.value == 255 && std::abs(pixel.x * ct + pixel.y * st - rho) < threshold) {
             count++;
         }
@@ -69,27 +94,50 @@ int CountPixelsInLine(PixelVector const *pixel_vector, float const theta, float 
 }
 
 // Constrói o espaço parâmetral de Hough
-void HoughParameterSpace::build_space(PixelVector const *pixel_vector, float threshold) {
+void HoughParameterSpace::build_space(PixelVector pixel_vector, float threshold) {
     data = (Line *)malloc(sizeof(Line) * width * height);
-    max = data;
 
-    float rho = range_rho.start;
-    for (int i = 0; i < height; i++) {
-        float theta = range_theta.start;
+    // O cálculo de máximo global não é trivial de ser feito em threads.
+    // É melhor realizar cálculos de máximo local e depois juntar tudo.
+    std::mutex list_lock;
+    std::vector<Line *> max_list{};
 
-        for (int j = 0; j < width; j++) {
-            int parameter = j + i * width;
+    // Função lambda de processamento do espaço parametral
+    auto lambda = [this, pixel_vector, threshold, &max_list, &list_lock](int start_row, int end_row) {
+        float rho = range_rho.start + range_rho.step * start_row;
+        // Começa assumindo que o máximo local é o primeiro elemento do array local.
+        Line *local_max = data + start_row * width;
 
-            int count = CountPixelsInLine(pixel_vector, theta, rho, threshold);
-            data[parameter] = {theta, rho, count};
-            if (count > max->count) {
-                max = &(data[parameter]);
+        for (int i = start_row; i < end_row; i++) {
+            float theta = range_theta.start;
+            for (int j = 0; j < width; j++) {
+                int parameter = j + i * width;
+                int count = CountPixelsInLine(pixel_vector, theta, rho, threshold);
+                data[parameter] = {theta, rho, count};
+                if (count > local_max->count) {
+                    local_max = &(data[parameter]);
+                }
+
+                theta += range_theta.step;
             }
 
-            theta += range_theta.step;
+            rho += range_rho.step;
         }
 
-        rho += range_rho.step;
+        list_lock.lock();
+        max_list.push_back(local_max);
+        list_lock.unlock();
+    };
+
+    // Realiza o processamento
+    DoThreaded(lambda, height);
+
+    // Calcula o máximo global após o processamento
+    max = data; // Começa assumindo que o máximo global é o primeiro elemento do array.
+    for (Line *local_max : max_list) {
+        if (local_max->count > max->count) {
+            max = local_max;
+        }
     }
 }
 
@@ -107,15 +155,14 @@ Image HoughParameterSpace::image() {
 }
 
 // Construtores
-HoughParameterSpace::HoughParameterSpace(const PixelVector *pixel_vector, int diagonal,
-                                         float threshold)
+HoughParameterSpace::HoughParameterSpace(PixelVector pixel_vector, int diagonal, float threshold)
     : range_rho(0.0f, diagonal, DEFAULT_RHO_STEP),
       width(range_theta.size()),
       height(range_rho.size()) {
     build_space(pixel_vector, threshold);
 }
-HoughParameterSpace::HoughParameterSpace(const PixelVector *pixel_vector, int diagonal,
-                                         Range theta_range, float rho_step, float threshold)
+HoughParameterSpace::HoughParameterSpace(PixelVector pixel_vector, int diagonal, Range theta_range,
+                                         float rho_step, float threshold)
     : range_theta(theta_range),
       range_rho(0.0f, diagonal, rho_step),
       width(range_theta.size()),

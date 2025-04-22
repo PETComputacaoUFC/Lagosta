@@ -1,11 +1,10 @@
-#include <cstdio>
-
+#include "imgtools/filters.hpp"
 #include "raylib.h"
+#include "reader.hpp"
+
 #define CLAY_IMPLEMENTATION
-#include "ZXing/ReadBarcode.h"
 #include "clay.h"
 #include "clay_renderer_raylib.c"
-
 
 void HandleClayErrors(Clay_ErrorData errorData) { printf("%s", errorData.errorText.chars); }
 
@@ -30,36 +29,31 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    // Carrega a imagem pelo raylib
-    Image datamatrix = LoadImage("resources/datamatrix.png");
-    // A leitura do código espera que a imagem input seja grayscale
-    ImageFormat(&datamatrix, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+    Image img1 = LoadImage("resources/scans_teste_oci/out0009.png");
+    ImageFormat(&img1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 
-    // Ponteiro pros dados da imagem
-    unsigned char* img_data = (unsigned char*)datamatrix.data;
+    Reader reader{};
+    Reading reading = reader.read(img1);
+    printf("Reading: %s\n", reading.answer_string.c_str());
+    
 
-    // Objeto imagem do leitor
-    auto image =
-        ZXing::ImageView(img_data, datamatrix.width, datamatrix.height, ZXing::ImageFormat::Lum);
-    // Opções de leitura
-    auto options = ZXing::ReaderOptions().setFormats(
-        ZXing::BarcodeFormat::DataMatrix);  // Especifica o formato de barcode pra ele tentar ler
+    ImageThreshold(&img1, 90);
+    ImageNormalizedGradient(&img1);
+    ImageThreshold(&img1, 1);
+    Texture2D texture1 = LoadTextureFromImage(img1);
 
-    // Tenta ler um código de barras na imagem dadas as opções (se ele não conseguir, a string é
-    // vazia.)
-    auto barcode = ZXing::ReadBarcode(image, options);
-    printf("Leitura: %s\n", barcode.text().c_str());
-
-    Texture2D texture = LoadTextureFromImage(datamatrix);
     Camera2D camera = {};
-    camera.zoom = 0.75f;
+    camera.zoom = 0.8f;
 
     while (!WindowShouldClose()) {
         // ==== DRAW ====
         BeginDrawing();
         ClearBackground(BLACK);
         BeginMode2D(camera);
-        DrawTexture(texture, 0, 0, WHITE);
+
+        DrawTexture(texture1, 0, 0, WHITE);
+        reader.draw_reading(reading);
+
         EndMode2D();
         EndDrawing();
     }
