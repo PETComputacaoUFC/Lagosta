@@ -12,3 +12,5 @@ void ImageThreshold(Image *image, uint8_t threshold);
 void ImageInvert(Image *image);
 
 void ImagePow(Image *image, float expo);
+
+void ImageNormalizedGradient(Image *image);

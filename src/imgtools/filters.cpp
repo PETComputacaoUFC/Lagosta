@@ -5,6 +5,8 @@
 #include <functional>
 #include <thread>
 
+#include "imgtools.hpp"
+
 const int MAX_THREADS = std::thread::hardware_concurrency();
 
 void do_threads(std::function<void(int, int)> lambda, int elements) {
@@ -161,4 +163,22 @@ void ImagePow(Image *image, float expo) {
 
     int pixels = image->height * image->width;
     do_threads(lambda, pixels);
+}
+
+// Gera o gradiente de uma imagem normalizado entre 0 e 1 (0 e 255)
+void ImageNormalizedGradient(Image *image) {
+    // não podemos fazer a modificação in-place, uma iteração vai afetar o resultado da outra.
+    uint8_t *grad_data = (uint8_t *)malloc(image->width * image->height);
+
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            int pixel = x + y * image->width;
+            float dx = XDerivative(image, x, y);
+            float dy = YDerivative(image, x, y);
+            grad_data[pixel] = (uint8_t)std::clamp(VectorMagnitude(dx, dy) * 255.0f, 0.0f, 255.0f);
+        }
+    }
+
+    free(image->data);
+    image->data = grad_data;
 }

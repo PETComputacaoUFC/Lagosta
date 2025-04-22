@@ -1,8 +1,6 @@
-#include "imgtools/align.hpp"
 #include "imgtools/filters.hpp"
 #include "imgtools/imgtools.hpp"
 #include "raylib.h"
-#include "raymath.h"
 
 #define CLAY_IMPLEMENTATION
 #include "clay.h"
@@ -31,19 +29,22 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    Image img1 = LoadImage("resources/align_test/lines2.png");
+    Image img1 = LoadImage("resources/align_test/align_test01.png");
     ImageFormat(&img1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
 
     // ImageResize(&img1, 331, 233);
     ImageNormalizedGradient(&img1);
     ImageThreshold(&img1, 20);
 
-    Range angle_range = {-90.0f, 90.0f, 1.0f};
+    Range angle_range_h = {-20.0f, 20.0f, 1.0f};
 
-    int diagonal = GetDiagonal(&img1);
+    Range angle_range_v1 = {-90.0f, -70.0f, 1.0f};
+    Range angle_range_v2 = {70.0f, 90.0f, 1.0f};
+    
+    int diagonal = GetDiagonalLength(&img1);
     PixelVector pv = FilterImageThreshold(&img1, 255);
 
-    HoughParameterSpace pspace(&pv, diagonal, angle_range, 1.0, 1.0);
+    HoughParameterSpace pspace(&pv, diagonal, angle_range_h, 1.0, 0.5);
     printf("width: %d, height: %d\n", pspace.width, pspace.height);
     printf("max: theta: %.2f, rho: %.2f, %d\n", pspace.max->theta, pspace.max->rho,
            pspace.max->count);
