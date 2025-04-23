@@ -205,7 +205,6 @@ const Rectangle BLOCKS[4] = {
 };
 
 void Reader::image_filter_hough(Image *image) {
-    ImagePow(image, 2);
     ImageThreshold(image, 80);
     ImageNormalizedGradient(image);
     ImageThreshold(image, 1);

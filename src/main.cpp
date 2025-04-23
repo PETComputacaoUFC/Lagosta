@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <string>
 
-#include "imgtools/filters.hpp"
 #include "raylib.h"
 #include "reader.hpp"
 #include "scanner.hpp"
@@ -46,6 +45,7 @@ int main(void) {
 
     FilePathList pathlist = LoadDirectoryFiles("resources/scans_teste_oci");
     std::vector<std::string> image_paths;
+    size_t path_index = 0;
     for (size_t p = 0; p < pathlist.count; p++) { image_paths.push_back(pathlist.paths[p]); }
     std::sort(image_paths.begin(), image_paths.end());
     Texture texture;
@@ -53,16 +53,6 @@ int main(void) {
 
     Camera2D camera = {};
     camera.zoom = 0.8f;
-
-
-    /* ==== SCAN DE IMAGEM ==== */
-    // SANE_Int sane_version;
-    // sane_init(&sane_version, nullptr);
-    // SANE_Handle handler = GetScanner("000000000YP76T4DPR1a");
-    // Image img = ImageFromScanner(handler);
-    // sane_exit();
-
-    // ExportImage(img, "scan.png");
 
 
     /* ==== LEITURA GABARITO ==== */
@@ -82,8 +72,72 @@ int main(void) {
     reader.image_filter_hough(&img);
     texture = LoadTextureFromImage(img);
 
+    bool update_reading = false;
     while (!WindowShouldClose()) {
-        /* ==== DRAW ==== */
+        /* ==== UPDATE ==== */
+        if (IsKeyPressed(KEY_LEFT)) {
+            if (path_index > 0) {
+                path_index -= 1;
+                update_reading = true;
+            }
+        }
+
+        if (IsKeyPressed(KEY_RIGHT)) {
+            if (path_index < image_paths.size() - 1) {
+                path_index += 1;
+                update_reading = true;
+            }
+        }
+
+        if (IsKeyPressed(KEY_SPACE)) {
+            /* ==== SCAN DE IMAGEM ==== */
+            SANE_Int sane_version;
+            sane_init(&sane_version, nullptr);
+            SANE_Handle handler = GetScanner("000000000YP76T4DPR1a");
+            Image img_gabarito = ImageFromScanner(handler);
+            sane_exit();
+
+            // ExportImage(img, "scan.png");
+
+            /* ==== LEITURA GABARITO ==== */
+            reading = reader.read(img_gabarito);
+            printf("  > Gabarito: %s\n", reading.answer_string.c_str());
+
+            /* ==== LEITURA AZTEC CODE ==== */
+            ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+            unsigned char* img_data = (unsigned char*)img_gabarito.data;
+            auto image = ZXing::ImageView(img_data, img_gabarito.width, img_gabarito.height,
+                                            ZXing::ImageFormat::Lum);
+            auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
+            auto barcode = ZXing::ReadBarcode(image, options);
+            printf("  > Aztec: %s\n", barcode.text().c_str());
+
+            reader.image_filter_hough(&img_gabarito);
+            texture = LoadTextureFromImage(img_gabarito);
+        }
+
+        if (update_reading) {
+            update_reading = false;
+
+            /* ==== LEITURA GABARITO ==== */
+            std::string img_path = image_paths[path_index];
+            printf("\nFILE: %s\n", img_path.c_str());
+            Image img_gabarito = LoadImage(img_path.c_str());
+            reading = reader.read(img_gabarito);
+            printf("  > Gabarito: %s\n", reading.answer_string.c_str());
+
+            /* ==== LEITURA AZTEC CODE ==== */
+            ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+            unsigned char* img_data = (unsigned char*)img_gabarito.data;
+            auto image = ZXing::ImageView(img_data, img_gabarito.width, img_gabarito.height,
+                                          ZXing::ImageFormat::Lum);
+            auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
+            auto barcode = ZXing::ReadBarcode(image, options);
+            printf("  > Aztec: %s\n", barcode.text().c_str());
+
+            reader.image_filter_hough(&img_gabarito);
+            texture = LoadTextureFromImage(img_gabarito);
+        }
         BeginDrawing();
         ClearBackground(BLACK);
         BeginMode2D(camera);
