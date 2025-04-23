@@ -1,0 +1,48 @@
+Group: Scan mode
+        02 - Scan mode
+             name: mode
+             desc: Selects the scan mode (e.g., lineart, monochrome, or color). -- Gray, Lineart, Color
+             value_type: SANE_TYPE_STRING
+             value: Lineart
+        03 - Scan resolution
+             name: resolution
+             desc: Sets the resolution of the scanned image.
+             value_type: SANE_TYPE_INT
+             value: 75
+        04 - Scan source
+             name: source
+             desc: Selects the scan source (such as a document-feeder).
+             value_type: SANE_TYPE_STRING
+             value: Flatbed
+Group: Advanced
+        06 - Contrast
+             name: contrast
+             desc: Controls the contrast of the acquired image.
+             value_type: SANE_TYPE_INT
+             value: 6
+        07 - Brightness
+             name: brightness
+             desc: Controls the brightness of the acquired image.
+             value_type: SANE_TYPE_INT
+             value: 6
+Group: Geometry
+        09 - Top-left x
+             name: tl-x
+             desc: Top-left x position of scan area.
+             value_type: SANE_TYPE_FIXED
+             value: 0
+        10 - Top-left y
+             name: tl-y
+             desc: Top-left y position of scan area.
+             value_type: SANE_TYPE_FIXED
+             value: 0
+        11 - Bottom-right x
+             name: br-x
+             desc: Bottom-right x position of scan area.
+             value_type: SANE_TYPE_FIXED
+             value: 14149222
+        12 - Bottom-right y
+             name: br-y
+             desc: Bottom-right y position of scan area.
+             value_type: SANE_TYPE_FIXED
+             value: 24969216
