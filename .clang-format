@@ -5,3 +5,4 @@ AccessModifierOffset: -4
 AlignOperands: AlignAfterOperator
 BreakBeforeBinaryOperators: NonAssignment
 MaxEmptyLinesToKeep: 4
+AllowShortBlocksOnASingleLine: true

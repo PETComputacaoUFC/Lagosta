@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <string>
 
 #include "raylib.h"
 #include "reader.hpp"
@@ -31,7 +32,7 @@ int main(void) {
     SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    // Carrega a imagem pelo raylib
+    /* ==== TESTE LEITURA AZTEC CODE ==== */
     Image img1 = LoadImage("resources/qr_test/qr_test02.png");
     // O leitor da biblioteca espera que a imagem input seja grayscale
     ImageFormat(&img1, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
@@ -42,13 +43,24 @@ int main(void) {
     auto barcode = ZXing::ReadBarcode(image, options);
     printf("Leitura Aztec: %s\n", barcode.text().c_str());
 
+    /* ==== TESTE LEITURA GABARITO ==== */
     Reader reader{};
+    FilePathList image_paths = LoadDirectoryFiles("resources/scans_teste_oci");
+    for (size_t p = 0; p < image_paths.count; p++) {
+        std::string path = image_paths.paths[p];
+        if (path.contains("base") || path.contains("test0")) { continue; }
+        Image img_gabarito = LoadImage(path.c_str());
+        Reading reading = reader.read(img_gabarito);
+        printf("%s\n", path.c_str());
+        printf(" > %s\n", reading.answer_string.c_str());
+    }
+
     Reading reading = reader.read(img1);
     printf("Leitura gabarito: %s\n", reading.answer_string.c_str());
-    
+
     reader.image_filter1(&img1);
     Texture2D texture = LoadTextureFromImage(img1);
-    
+
     Camera2D camera = {};
     camera.zoom = 0.8f;
 
