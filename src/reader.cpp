@@ -192,10 +192,10 @@ const Range THETA_RANGE_V2 = {80.0f, 90.0f, 1.0f};
 const float RHO_STEP = 1.0f;
 const float HOUGH_THRESHOLD = 0.5f;
 
-const int BLOCK_WIDTH = 100;
-const int BLOCK_HEIGHT = 100;
-const int BLOCK_X1 = 2, BLOCK_X2 = 1148;
-const int BLOCK_Y1 = 2, BLOCK_Y2 = 749;
+const int BLOCK_WIDTH = 120;
+const int BLOCK_HEIGHT = 90;
+const int BLOCK_X1 = 0, BLOCK_X2 = 1144;
+const int BLOCK_Y1 = 0, BLOCK_Y2 = 774;
 
 const Rectangle BLOCKS[4] = {
     {BLOCK_X1, BLOCK_Y1, BLOCK_WIDTH, BLOCK_HEIGHT},
@@ -203,6 +203,14 @@ const Rectangle BLOCKS[4] = {
     {BLOCK_X1, BLOCK_Y2, BLOCK_WIDTH, BLOCK_HEIGHT},
     {BLOCK_X2, BLOCK_Y2, BLOCK_WIDTH, BLOCK_HEIGHT},
 };
+
+void Reader::image_filter_hough(Image *image) {
+    ImagePow(image, 2);
+    ImageThreshold(image, 80);
+    ImageNormalizedGradient(image);
+    ImageThreshold(image, 1);
+    // ImageDilate(image, 1);
+}
 
 // TODO: Better way of finding reading rectangle
 std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
@@ -213,10 +221,7 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
         Image block_img = ImageCopy(image);
         ImageCrop(&block_img, block_rect);
 
-        ImageThreshold(&block_img, 90);
-        ImageNormalizedGradient(&block_img);
-        ImageThreshold(&block_img, 1);
-        ImageDilate(&block_img, 1);
+        image_filter_hough(&block_img);
 
         int diagonal = GetDiagonalLength(block_img);
         PixelVector white_pixels = FilterImageThreshold(block_img, 255);

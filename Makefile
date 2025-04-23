@@ -3,10 +3,10 @@ CXX := g++
 CXXFLAGS += -Wall -Wextra -Wno-missing-field-initializers \
 		 	-Iinclude -std=c++23 -O2
 LDFLAGS := -Llib -lraylib -lZXing
-OS_LDFLAGS := -lGL -lm -lpthread -ldl -lrt -lX11
+OS_LDFLAGS := -lGL -lm -lpthread -ldl -lrt -lX11 -lsane
 
 SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp \
-		   ./src/imgtools/imgtools.cpp
+		   ./src/imgtools/imgtools.cpp ./src/scanner.cpp
 OBJECTS := $(patsubst ./src/%.cpp, ./build/%.o, $(SOURCES))
 OUTPUT := ./build/lagosta
 BUILD_DIRS := $(sort $(dir $(OBJECTS)))
@@ -27,6 +27,7 @@ else
 endif
 
 ifeq ($(IS_WINDOWS),1) # Flags de compilação no windows
+	OS_CXXFLAGS := -DWINDOWS=true
 	OS_LDFLAGS := -lgdi32 -lwinmm
 	OUTPUT := ./build/lagosta.exe
 
@@ -37,6 +38,7 @@ ifeq ($(IS_WINDOWS),1) # Flags de compilação no windows
 	endif
 endif
 
+CXXFLAGS += $(OS_CXXFLAGS)
 LDFLAGS += $(OS_LDFLAGS)
 ############### BUILDING RULES ###############
 .PHONY = all dir run clean

@@ -44,7 +44,7 @@ void PrintDeviceOpts(SANE_Handle handle) {
                 break;
             }
             case SANE_TYPE_STRING: {
-                char *v;
+                char *v = (char *)malloc(1);  // SILENCE THE WARNINGS AAAA
                 sane_control_option(handle, opt, SANE_ACTION_GET_VALUE, (void *)v, NULL);
                 printf("\t     value: %s\n", v);
                 break;
@@ -56,7 +56,7 @@ void PrintDeviceOpts(SANE_Handle handle) {
 }
 
 // Returns list of scanner names
-std::vector<std::string> GetScanners() {
+std::vector<std::string> GetScannerNames() {
     std::vector<std::string> scanners{};
 
     SANE_Device **devices;
@@ -71,12 +71,12 @@ std::vector<std::string> GetScanners() {
 }
 
 // Returns a handle to the scanner. NULL if no scanner was found.
-SANE_Handle FindScanner(std::string name_pattern) {
-    std::vector<std::string> scanners = GetScanners();
+SANE_Handle GetScanner(std::string name_pattern) {
+    std::vector<std::string> scanners = GetScannerNames();
 
     // Tries to find the device
     for (std::string scanner_name : scanners) {
-        if (scanner_name.find(name_pattern) != -1) {
+        if (scanner_name.find(name_pattern) != (size_t)-1) {
             SANE_Handle device_handle;
             SANE_Status status = sane_open(scanner_name.c_str(), &device_handle);
             if (status != SANE_STATUS_GOOD) { return nullptr; }
@@ -94,12 +94,10 @@ unsigned char *ReadScannerData(SANE_Handle handle) {
     sane_get_parameters(handle, &p);
 
     int bytes = p.lines * p.bytes_per_line;
-    printf("%d\n", bytes);
     uint8_t *pixels = (uint8_t *)malloc(bytes);
     uint8_t *img_start = pixels;
     for (int p = 0; p < bytes; p++) { pixels[p] = 255; }
 
-    int bytes_read;
     int read_length;
     while (true) {
         SANE_Status status = sane_read(handle, pixels, bytes, &read_length);
@@ -109,7 +107,6 @@ unsigned char *ReadScannerData(SANE_Handle handle) {
             sane_close(handle);
             return nullptr;
         }
-        bytes_read += read_length;
         pixels += read_length;
     }
 
@@ -117,11 +114,12 @@ unsigned char *ReadScannerData(SANE_Handle handle) {
 }
 
 // Reads data from a scanner and converts it into a raylib image
-Image ImageFromScanner(std::string name_pattern) {
-    SANE_Handle device_handle = FindScanner(name_pattern);
-
+Image ImageFromScanner(SANE_Handle device_handle) {
     // sets SCAN MODE option to monochrome
     sane_control_option(device_handle, 2, SANE_ACTION_SET_VALUE, (void *)"Gray", NULL);
+    // sets SCAN RESOLUTION option to 150dpi
+    const int SCAN_DPI = 150;
+    sane_control_option(device_handle, 3, SANE_ACTION_SET_VALUE, (void *)&SCAN_DPI, NULL);
 
     // Starts scanning
     SANE_Status status = sane_start(device_handle);

@@ -1,3 +1,7 @@
+#ifndef WINDOWS
+#include <sane/sane.h>
+#endif
+
 #include <algorithm>
 #include <cstdio>
 #include <string>
@@ -5,6 +9,7 @@
 #include "imgtools/filters.hpp"
 #include "raylib.h"
 #include "reader.hpp"
+#include "scanner.hpp"
 #define CLAY_IMPLEMENTATION
 #include "ZXing/ReadBarcode.h"
 #include "clay.h"
@@ -13,9 +18,11 @@
 
 void HandleClayErrors(Clay_ErrorData errorData) { printf("%s", errorData.errorText.chars); }
 
+// 1144,774
+// 120x90
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
-    Clay_Raylib_Initialize(992, 699, "Lagosta",
+    Clay_Raylib_Initialize(1012, 720, "Lagosta",
                            FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT
                                | FLAG_VSYNC_HINT);  // Extra parameters to this function are new
                                                     // since the video was published
@@ -36,63 +43,46 @@ int main(void) {
 
     // Inicializando leitura interativa do gabarito
     Reader reader{};
-    
+
     FilePathList pathlist = LoadDirectoryFiles("resources/scans_teste_oci");
     std::vector<std::string> image_paths;
     for (size_t p = 0; p < pathlist.count; p++) { image_paths.push_back(pathlist.paths[p]); }
     std::sort(image_paths.begin(), image_paths.end());
-    size_t path_index = 10;
     Texture texture;
     Reading reading;
 
     Camera2D camera = {};
     camera.zoom = 0.8f;
 
-    bool update_reading = true;
+
+    /* ==== SCAN DE IMAGEM ==== */
+    // SANE_Int sane_version;
+    // sane_init(&sane_version, nullptr);
+    // SANE_Handle handler = GetScanner("000000000YP76T4DPR1a");
+    // Image img = ImageFromScanner(handler);
+    // sane_exit();
+
+    // ExportImage(img, "scan.png");
+
+
+    /* ==== LEITURA GABARITO ==== */
+    Image img = LoadImage("resources/scans_teste_oci/out0007.png");
+
+    reading = reader.read(img);
+    printf("  > Gabarito: %s\n", reading.answer_string.c_str());
+
+
+    /* ==== LEITURA AZTEC CODE ==== */
+    unsigned char* img_data = (unsigned char*)img.data;
+    auto image = ZXing::ImageView(img_data, img.width, img.height, ZXing::ImageFormat::Lum);
+    auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
+    auto barcode = ZXing::ReadBarcode(image, options);
+    printf("  > Aztec: %s\n", barcode.text().c_str());
+
+    reader.image_filter_hough(&img);
+    texture = LoadTextureFromImage(img);
+
     while (!WindowShouldClose()) {
-        /* ==== UPDATE ==== */
-        if (IsKeyPressed(KEY_LEFT)) {
-            if (path_index > 0) {
-                path_index -= 1;
-                update_reading = true;
-            }
-        }
-
-        if (IsKeyPressed(KEY_RIGHT)) {
-            if (path_index < image_paths.size() - 1) {
-                path_index += 1;
-                update_reading = true;
-            }
-        }
-
-        if (update_reading) {
-            update_reading = false;
-
-            /* ==== LEITURA GABARITO ==== */
-            std::string img_path = image_paths[path_index];
-            printf("\nFILE: %s\n", img_path.c_str());
-            Image img_gabarito = LoadImage(img_path.c_str());
-            reading = reader.read(img_gabarito);
-            printf("  > Gabarito: %s\n", reading.answer_string.c_str());
-
-            /* ==== LEITURA AZTEC CODE ==== */
-            ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-            unsigned char* img_data = (unsigned char*)img_gabarito.data;
-            auto image = ZXing::ImageView(img_data, img_gabarito.width, img_gabarito.height,
-                                          ZXing::ImageFormat::Lum);
-            auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
-            auto barcode = ZXing::ReadBarcode(image, options);
-            printf("  > Aztec: %s\n", barcode.text().c_str());
-
-            reader.image_filter1(&img_gabarito);
-            // ImageThreshold(&img_gabarito, 90);
-            // ImageNormalizedGradient(&img_gabarito);
-            // ImageThreshold(&img_gabarito, 1);
-            // ImageDilate(&img_gabarito, 1);
-
-            texture = LoadTextureFromImage(img_gabarito);
-        }
-
         /* ==== DRAW ==== */
         BeginDrawing();
         ClearBackground(BLACK);
