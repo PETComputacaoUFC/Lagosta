@@ -21,8 +21,8 @@
 // q01a:  0.192147034, 0.566997519  |  q11a:  0.474519632, 0.566997519
 // modalidade:  0.7393448371, 0.566997519  |  fase:  0.763575606, 0.651364764
 // horizontal spacing: 0.04735  |  vertical spacing: 0.042
-const float Q01A_X = 0.192147034f, Q01A_Y = 0.566997519f;
-const float Q11A_X = 0.474519632f, Q11A_Y = 0.566997519f;
+const float Q01A_X = 0.193147034f, Q01A_Y = 0.566997519f;
+const float Q11A_X = 0.475519632f, Q11A_Y = 0.566997519f;
 // const float MODALIDADE_X = 0.7393448371f, MODALIDADE_Y = 0.566997519f;
 // const float FASE_X = 0.763575606f, FASE_Y = 0.651364764f;
 const float X_ITEM_SPACING = 0.04735f;

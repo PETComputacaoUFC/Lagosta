@@ -84,11 +84,11 @@ int main(void) {
             auto barcode = ZXing::ReadBarcode(image, options);
             printf("  > Aztec: %s\n", barcode.text().c_str());
 
-            // reader.image_filter1(&img_gabarito);
-            ImageThreshold(&img_gabarito, 90);
-            ImageNormalizedGradient(&img_gabarito);
-            ImageThreshold(&img_gabarito, 1);
-            ImageDilate(&img_gabarito, 1);
+            reader.image_filter1(&img_gabarito);
+            // ImageThreshold(&img_gabarito, 90);
+            // ImageNormalizedGradient(&img_gabarito);
+            // ImageThreshold(&img_gabarito, 1);
+            // ImageDilate(&img_gabarito, 1);
 
             texture = LoadTextureFromImage(img_gabarito);
         }
