@@ -10,7 +10,7 @@
 
 // O valor de cada pixel se torna o MAIOR valor dos pixels em sua vizinhança
 void ImageDilate(Image *image, int kernel_radius) {
-    size_t img_memsize = sizeof(uint8_t) * image->width * image->height;
+    size_t img_memsize = image->width * image->height;
     uint8_t *image_data = (uint8_t *)image->data;
     uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
     memcpy(image_copy, image_data, img_memsize);
@@ -20,16 +20,13 @@ void ImageDilate(Image *image, int kernel_radius) {
         for (int y = start_row; y < end_row; y++) {
             for (int x = 0; x < image->width; x++) {
                 // offset = x pixels + y * width pixels
-                int copy_offset = sizeof(uint8_t) * x + sizeof(uint8_t) * image->width * y;
+                int copy_offset = x + image->width * y;
 
                 for (int i = -kernel_radius; i <= kernel_radius; i++) {
                     for (int j = -kernel_radius; j <= kernel_radius; j++) {
-                        int data_offset =
-                            sizeof(uint8_t) * (x + i) + sizeof(uint8_t) * image->width * (y - j);
+                        int data_offset = (x + i) + image->width * (y + j);
 
-                        if (data_offset > (int)img_memsize || data_offset < 0) {
-                            continue;
-                        }
+                        if (data_offset > (int)img_memsize || data_offset < 0) { continue; }
                         if (image_data[data_offset] == 255) {
                             image_copy[copy_offset] = 255;
                             goto next_pixel;
@@ -51,7 +48,7 @@ void ImageDilate(Image *image, int kernel_radius) {
 
 // O valor de cada pixel se torna o MENOR valor dos pixels em sua vizinhança
 void ImageErode(Image *image, int kernel_radius) {
-    size_t img_memsize = sizeof(uint8_t) * image->width * image->height;
+    size_t img_memsize = image->width * image->height;
     uint8_t *image_data = (uint8_t *)image->data;
     uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
     memcpy(image_copy, image_data, img_memsize);
@@ -61,16 +58,13 @@ void ImageErode(Image *image, int kernel_radius) {
         for (int y = start_row; y < end_row; y++) {
             for (int x = 0; x < image->width; x++) {
                 // offset = x pixels + y * width pixels
-                int copy_offset = sizeof(uint8_t) * x + sizeof(uint8_t) * image->width * y;
+                int copy_offset = x + image->width * y;
 
                 for (int i = -kernel_radius; i <= kernel_radius; i++) {
                     for (int j = -kernel_radius; j <= kernel_radius; j++) {
-                        int data_offset =
-                            sizeof(uint8_t) * (x + i) + sizeof(uint8_t) * image->width * (y - j);
+                        int data_offset = (x + i) + image->width * (y + j);
 
-                        if (data_offset > (int)img_memsize || data_offset < 0) {
-                            continue;
-                        }
+                        if (data_offset > (int)img_memsize || data_offset < 0) { continue; }
                         if (image_data[data_offset] == 0) {
                             image_copy[copy_offset] = 0;
                             goto next_pixel;
@@ -96,7 +90,7 @@ void ImageThreshold(Image *image, uint8_t threshold) {
 
     auto lambda = [image_data, threshold](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {
-            int offset = sizeof(uint8_t) * t;
+            int offset = t;
 
             uint8_t pixel = image_data[offset];
 
@@ -118,7 +112,7 @@ void ImagePow(Image *image, float expo) {
 
     auto lambda = [image_data, expo](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {
-            int offset = sizeof(uint8_t) * t;
+            int offset = t;
             float pixel = ((float)image_data[offset]) / 255.0f;
             pixel = pow(pixel, expo);
             image_data[offset] = (uint8_t)(pixel * 255.0f);
@@ -153,7 +147,8 @@ void ImageNormalizedGradient(Image *image) {
                 int pixel = x + y * image->width;
                 float dx = XDerivative(*image, x, y);
                 float dy = YDerivative(*image, x, y);
-                grad_data[pixel] = (uint8_t)std::clamp(VectorMagnitude(dx, dy) * 255.0f, 0.0f, 255.0f);
+                grad_data[pixel] =
+                    (uint8_t)std::clamp(VectorMagnitude(dx, dy) * 255.0f, 0.0f, 255.0f);
             }
         }
     };
