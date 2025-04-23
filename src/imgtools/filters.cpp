@@ -60,7 +60,7 @@ void ImageDilate(Image *image, int kernel_size) {
                     }
                 }
 
-            next_pixel:
+            next_pixel:;
             }
         }
     };
@@ -102,7 +102,7 @@ void ImageErode(Image *image, int kernel_size) {
                     }
                 }
 
-            next_pixel:
+            next_pixel:;
             }
         }
     };
