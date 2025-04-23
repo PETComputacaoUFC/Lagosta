@@ -42,9 +42,7 @@ public:
     void draw_reading(Reading reading);
     void image_filter1(Image *image);
     void image_filter2(Image *image);
-
-private:
-    std::array<Vector2, 4> get_reading_rectangle(Image image);
     float read_pixel(Image image, int x, int y);
     float read_area(Image image, int x, int y);
+    std::array<Vector2, 4> get_reading_rectangle(Image image);
 };

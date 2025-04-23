@@ -124,6 +124,7 @@ float Reader::read_pixel(Image image, int x, int y) {
     return ((float)((uint8_t *)image.data)[offset]) / 255.0f;
 }
 
+// Retorna porcentagem dos pixels de uma área que estão acima do threshold
 float Reader::read_area(Image image, int x, int y) {
     Vector2 center = {(float)x, (float)y};
     float reading = 0.0f;
@@ -185,9 +186,9 @@ void Reader::draw_reading(Reading reading) {
     }
 }
 
-const Range THETA_RANGE_H = {-20.0f, 20.0f, 1.0f};
-const Range THETA_RANGE_V1 = {-90.0f, -70.0f, 1.0f};
-const Range THETA_RANGE_V2 = {70.0f, 90.0f, 1.0f};
+const Range THETA_RANGE_H = {-10.0f, 10.0f, 1.0f};
+const Range THETA_RANGE_V1 = {-90.0f, -80.0f, 1.0f};
+const Range THETA_RANGE_V2 = {80.0f, 90.0f, 1.0f};
 const float RHO_STEP = 1.0f;
 const float HOUGH_THRESHOLD = 0.5f;
 
@@ -205,6 +206,7 @@ const Rectangle BLOCKS[4] = {
 
 std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
     std::array<Vector2, 4> rectangle{};
+    
     int block_counter = 0;
     for (Rectangle block_rect : BLOCKS) {
         Image block_img = ImageCopy(image);
@@ -227,9 +229,11 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
         Line max_h = *pspace_h.max;
         Line max_v1 = *pspace_v1.max;
         Line max_v2 = *pspace_v2.max;
-
+        
         Line line1 = max_h;
         Line line2 = max_v1.count > max_v2.count ? max_v1 : max_v2;
+
+        printf("%d > line1: %d | line2: %d\n", block_counter, line1.count, line2.count);
 
         Vector2 intersection = IntersectionPoint(line1, line2);
         intersection.x += block_rect.x;
