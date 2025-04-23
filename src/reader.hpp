@@ -11,7 +11,17 @@ enum ReadMode : uint8_t {
     SAMPLE_CIRCLE,  // Averages a circle of radius read_radius around the item's center.
 };
 
+// TODO: Implement reading errors
+enum ReadError {
+    AZTEC_NOT_FOUND,
+};
+enum ReadWarning {
+    IMPRECISE_READING_RECTANGLE,
+    TOO_MANY_EMPTY_CHOICES,
+};
+
 struct Item {
+    // TODO: Change choice from char to enum
     char choice = '0';
     std::vector<float> choice_readings;
 };
@@ -19,8 +29,10 @@ struct Item {
 struct Reading {
     std::string answer_string = "";
     std::array<Vector2, 4> rectangle;
+    std::vector<ReadError> reading_errors;
+    std::vector<ReadWarning> reading_warnings;
     std::vector<Item> items = std::vector<Item>(20);  // questões
-    std::vector<Item> head = std::vector<Item>(2);    // cabeçalho: modalidade e fase
+    // TODO: Headers
 };
 
 // TODO: ReadingBox with coordinates instead of hard-coded values (see reader.cpp)
