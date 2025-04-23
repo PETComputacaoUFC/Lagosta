@@ -204,6 +204,7 @@ const Rectangle BLOCKS[4] = {
     {BLOCK_X2, BLOCK_Y2, BLOCK_WIDTH, BLOCK_HEIGHT},
 };
 
+// TODO: Better way of finding reading rectangle
 std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
     std::array<Vector2, 4> rectangle{};
     
