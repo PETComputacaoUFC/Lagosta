@@ -56,7 +56,7 @@ int main(void) {
 
 
     /* ==== LEITURA GABARITO ==== */
-    Image img = LoadImage("resources/scans_teste_oci/out0007.png");
+    Image img = LoadImage("resources/scans_teste_oci/out0002.png");
 
     reading = reader.read(img);
     printf("  > Gabarito: %s\n", reading.answer_string.c_str());
@@ -69,7 +69,7 @@ int main(void) {
     auto barcode = ZXing::ReadBarcode(image, options);
     printf("  > Aztec: %s\n", barcode.text().c_str());
 
-    reader.image_filter_hough(&img);
+    reader.image_filter1(&img);
     texture = LoadTextureFromImage(img);
 
     bool update_reading = false;
