@@ -48,7 +48,7 @@ int main(void) {
     camera.zoom = 0.8f;
 
 
-    Image img = LoadImage("resources/scans_teste_oci/out0009.png");
+    Image img = LoadImage("resources/scans_teste_oci/scan0003.png");
 
     /* ==== LEITURA GABARITO ==== */
     reading = reader.read(img);

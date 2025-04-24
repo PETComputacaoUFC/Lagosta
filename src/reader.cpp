@@ -210,6 +210,7 @@ void Reader::image_filter_hough(Image *image) {
 
 // TODO: There might be a better way of finding the reading rectangle;
 // grouping pixels and finding the one group closest to the corner, etc.
+// Also, maybe detecting 3 corners and finding the last one based on angles...
 std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
     std::array<Vector2, 4> rectangle{};
 
