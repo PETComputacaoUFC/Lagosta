@@ -7,4 +7,4 @@ CompileFlags:
         - "-Wall"
         - "-Wextra"
         - "-Wno-missing-field-initializers"
-        - "-std=c++23"
+        - "-std=c++17"
