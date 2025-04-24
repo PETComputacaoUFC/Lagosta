@@ -44,6 +44,9 @@ void Reader::image_filter2(Image *image) {
 }
 
 Reading Reader::read(Image image) {
+    // we'll store warnings inside the reader's vector, then copie the
+    // to the reading in the end.
+    warnings.clear();
     Image image_filtered1 = ImageCopy(image);
     image_filter1(&image_filtered1);
     Image image_filtered2 = ImageCopy(image_filtered1);
@@ -64,7 +67,7 @@ Reading Reader::read(Image image) {
     ZXing::ReaderOptions options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
     ZXing::Barcode barcode = ZXing::ReadBarcode(barcode_image_view, options);
     reading.barcode_string = barcode.text();
-    if (reading.barcode_string.empty()) { reading.warnings.push_back(BARCODE_NOT_FOUND); }
+    if (reading.barcode_string.empty()) { warnings.push_back(BARCODE_NOT_FOUND); }
 
     /* ==== READING ITEMS ==== */
     for (int i = 0; i < 10; i++) {
@@ -125,8 +128,11 @@ Reading Reader::read(Image image) {
         reading.answer_string.append(&item.choice);
     }
 
+    // this actually copies the vector, which is what we want.
+    reading.warnings = warnings;
     UnloadImage(image_filtered1);
     UnloadImage(image_filtered2);
+
     return reading;
 }
 
@@ -231,6 +237,7 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
     std::array<Vector2, 4> rectangle{};
 
     int block_counter = 0;
+    bool imprecise = false;  // mark if there was an imprecision finding the alignment corner
     for (Rectangle block_rect : BLOCKS) {
         Image block_img = ImageCopy(image);
         ImageCrop(&block_img, block_rect);
@@ -251,12 +258,14 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
         Line max_v1 = *pspace_v1.max;
         Line max_v2 = *pspace_v2.max;
 
-        Line line1 = max_h;
-        Line line2 = max_v1.count > max_v2.count ? max_v1 : max_v2;
+        Line line_h = max_h;
+        Line line_v = max_v1.count > max_v2.count ? max_v1 : max_v2;
 
-        printf("%d > line1: %d | line2: %d\n", block_counter, line1.count, line2.count);
+        // our threshold for imprecision is 5 countings or less.
+        if (line_h.count <= 5 || line_v.count <= 5) { imprecise = true; }
+        printf("%d > line_h: %d | line_v: %d\n", block_counter, line_h.count, line_v.count);
 
-        Vector2 intersection = IntersectionPoint(line1, line2);
+        Vector2 intersection = IntersectionPoint(line_h, line_v);
         intersection.x += block_rect.x;
         intersection.y += block_rect.y;
 
@@ -264,6 +273,8 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
 
         block_counter++;
     }
+
+    if (imprecise) { warnings.push_back(IMPRECISE_READING_RECTANGLE); }
 
     return rectangle;
 }
