@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 
@@ -11,30 +12,31 @@
 // O valor de cada pixel se torna o MAIOR valor dos pixels em sua vizinhança
 void ImageDilate(Image *image, int kernel_radius) {
     size_t img_memsize = image->width * image->height;
-    uint8_t *image_data = (uint8_t *)image->data;
-    uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
-    memcpy(image_copy, image_data, img_memsize);
+    uint8_t *img_data = (uint8_t *)image->data;
+    uint8_t *img_copy = (uint8_t *)malloc(img_memsize);
+    memcpy(img_copy, img_data, img_memsize);
 
-    auto lambda = [image, image_data, image_copy, img_memsize, kernel_radius](int start_row,
-                                                                              int end_row) {
+    int width = image->width;
+    int height = image->height;
+    auto lambda = [width, height, img_data, img_copy, kernel_radius](int start_row, int end_row) {
         for (int y = start_row; y < end_row; y++) {
-            for (int x = 0; x < image->width; x++) {
-                // offset = x pixels + y * width pixels
-                int copy_offset = x + image->width * y;
+            for (int x = 0; x < width; x++) {
+                int copy_offset = x + width * y;
 
-                for (int i = -kernel_radius; i <= kernel_radius; i++) {
-                    for (int j = -kernel_radius; j <= kernel_radius; j++) {
-                        int data_offset = (x + i) + image->width * (y + j);
+                // Pega o maior valor da vizinhança
+                uint8_t max_pixel = 0;
+                for (int ky = y - kernel_radius; ky <= y + kernel_radius; ky++) {
+                    if (ky < 0 || ky >= height) { continue; }
+                    for (int kx = x - kernel_radius; kx <= x + kernel_radius; kx++) {
+                        if (kx < 0 || kx >= width) { continue; }
 
-                        if (data_offset > (int)img_memsize || data_offset < 0) { continue; }
-                        if (image_data[data_offset] == 255) {
-                            image_copy[copy_offset] = 255;
-                            goto next_pixel;
-                        }
+                        size_t data_offset = kx + width * ky;
+                        uint8_t kpixel = img_data[data_offset];
+                        max_pixel = kpixel > max_pixel ? kpixel : max_pixel;
                     }
                 }
 
-            next_pixel:;
+                img_copy[copy_offset] = max_pixel;
             }
         }
     };
@@ -42,37 +44,38 @@ void ImageDilate(Image *image, int kernel_radius) {
     int rows = image->height;
     DoThreaded(lambda, rows);
 
-    memcpy(image_data, image_copy, img_memsize);
-    free(image_copy);
+    image->data = img_copy;
+    free(img_data);
 }
 
 // O valor de cada pixel se torna o MENOR valor dos pixels em sua vizinhança
 void ImageErode(Image *image, int kernel_radius) {
     size_t img_memsize = image->width * image->height;
-    uint8_t *image_data = (uint8_t *)image->data;
-    uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
-    memcpy(image_copy, image_data, img_memsize);
+    uint8_t *img_data = (uint8_t *)image->data;
+    uint8_t *img_copy = (uint8_t *)malloc(img_memsize);
+    memcpy(img_copy, img_data, img_memsize);
 
-    auto lambda = [image, image_data, image_copy, img_memsize, kernel_radius](int start_row,
-                                                                              int end_row) {
+    int width = image->width;
+    int height = image->height;
+    auto lambda = [width, height, img_data, img_copy, kernel_radius](int start_row, int end_row) {
         for (int y = start_row; y < end_row; y++) {
-            for (int x = 0; x < image->width; x++) {
-                // offset = x pixels + y * width pixels
-                int copy_offset = x + image->width * y;
+            for (int x = 0; x < width; x++) {
+                int copy_offset = x + width * y;
 
-                for (int i = -kernel_radius; i <= kernel_radius; i++) {
-                    for (int j = -kernel_radius; j <= kernel_radius; j++) {
-                        int data_offset = (x + i) + image->width * (y + j);
+                // Pega o menor valor da vizinhança
+                uint8_t min_pixel = 255;
+                for (int ky = y - kernel_radius; ky <= y + kernel_radius; ky++) {
+                    if (ky < 0 || ky >= height) { continue; }
+                    for (int kx = x - kernel_radius; kx <= x + kernel_radius; kx++) {
+                        if (kx < 0 || kx >= width) { continue; }
 
-                        if (data_offset > (int)img_memsize || data_offset < 0) { continue; }
-                        if (image_data[data_offset] == 0) {
-                            image_copy[copy_offset] = 0;
-                            goto next_pixel;
-                        }
+                        size_t data_offset = kx + width * ky;
+                        uint8_t kpixel = img_data[data_offset];
+                        min_pixel = kpixel < min_pixel ? kpixel : min_pixel;
                     }
                 }
 
-            next_pixel:;
+                img_copy[copy_offset] = min_pixel;
             }
         }
     };
@@ -80,24 +83,24 @@ void ImageErode(Image *image, int kernel_radius) {
     int rows = image->height;
     DoThreaded(lambda, rows);
 
-    memcpy(image_data, image_copy, img_memsize);
-    free(image_copy);
+    image->data = img_copy;
+    free(img_data);
 }
 
 // Colore preto cada pixel abaixo do threshold, e branco cada pixel igual ou acima.
 void ImageThreshold(Image *image, uint8_t threshold) {
-    uint8_t *image_data = (uint8_t *)image->data;
+    uint8_t *img_data = (uint8_t *)image->data;
 
-    auto lambda = [image_data, threshold](int start_pixel, int end_pixel) {
+    auto lambda = [img_data, threshold](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {
             int offset = t;
 
-            uint8_t pixel = image_data[offset];
+            uint8_t pixel = img_data[offset];
 
             if (pixel < threshold) {
-                image_data[offset] = 0;
+                img_data[offset] = 0;
             } else {
-                image_data[offset] = 255;
+                img_data[offset] = 255;
             }
         }
     };
@@ -108,14 +111,14 @@ void ImageThreshold(Image *image, uint8_t threshold) {
 
 // Trata cada pixel de uma imagem como um número entre 0 e 1, e eleva ele a um exponente
 void ImagePow(Image *image, float expo) {
-    uint8_t *image_data = (uint8_t *)image->data;
+    uint8_t *img_data = (uint8_t *)image->data;
 
-    auto lambda = [image_data, expo](int start_pixel, int end_pixel) {
+    auto lambda = [img_data, expo](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {
             int offset = t;
-            float pixel = ((float)image_data[offset]) / 255.0f;
+            float pixel = ((float)img_data[offset]) / 255.0f;
             pixel = pow(pixel, expo);
-            image_data[offset] = (uint8_t)(pixel * 255.0f);
+            img_data[offset] = (uint8_t)(pixel * 255.0f);
         }
     };
 
