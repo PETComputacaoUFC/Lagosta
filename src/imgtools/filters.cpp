@@ -13,7 +13,6 @@ void ImageDilate(Image *image, int kernel_radius) {
     size_t img_memsize = image->width * image->height;
     uint8_t *image_data = (uint8_t *)image->data;
     uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
-    memcpy(image_copy, image_data, img_memsize);
 
     auto lambda = [image, image_data, image_copy, img_memsize, kernel_radius](int start_row,
                                                                               int end_row) {
@@ -34,7 +33,7 @@ void ImageDilate(Image *image, int kernel_radius) {
                     }
                 }
 
-            next_pixel:
+            next_pixel:;
             }
         }
     };
@@ -51,7 +50,6 @@ void ImageErode(Image *image, int kernel_radius) {
     size_t img_memsize = image->width * image->height;
     uint8_t *image_data = (uint8_t *)image->data;
     uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
-    memcpy(image_copy, image_data, img_memsize);
 
     auto lambda = [image, image_data, image_copy, img_memsize, kernel_radius](int start_row,
                                                                               int end_row) {
@@ -72,7 +70,7 @@ void ImageErode(Image *image, int kernel_radius) {
                     }
                 }
 
-            next_pixel:
+            next_pixel:;
             }
         }
     };
@@ -158,4 +156,37 @@ void ImageNormalizedGradient(Image *image) {
 
     free(image->data);
     image->data = grad_data;
+}
+
+void ImageKernelConvolutionFast(Image *image, Kernel kernel) {
+    uint8_t *img_copy = (uint8_t *)malloc(image->width * image->height * sizeof(uint8_t));
+
+    auto lambda = [kernel, img_copy, image](int start_row, int end_row) {
+        int kernel_width = (int)sqrt((double)kernel.size);
+        int kernel_radius = kernel_width / 2;
+
+        for (int y = start_row; y < end_row; y++) {
+            for (int x = 0; x < image->width; x++) {
+                int offset = x + y * image->width;
+                float sum = 0.0f;
+
+                for (int ky = -kernel_radius; ky <= kernel_radius; ky++) {
+                    for (int kx = -kernel_radius; kx <= kernel_radius; kx++) {
+                        float kvalue =
+                            kernel.data[(kx + kernel_radius) + (ky + kernel_radius) * kernel_width];
+                        float kpixel = (float)GetPixelSafe(*image, x + kx, y + ky);
+                        sum += kpixel * kvalue;
+                    }
+                }
+
+                img_copy[offset] = (uint8_t)std::clamp(sum, 0.0f, 255.0f);
+            }
+        }
+    };
+
+    int rows = image->height;
+    DoThreaded(lambda, rows);
+
+    free(image->data);
+    image->data = img_copy;
 }

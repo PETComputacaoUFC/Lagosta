@@ -53,8 +53,8 @@ public:
     int height;
 
     HoughParameterSpace(PixelVector pixel_vector, int diagonal, float threshold = 1);
-    HoughParameterSpace(PixelVector pixel_vector, int diagonal, Range theta_range,
-                        float rho_step, float threshold = 1);
+    HoughParameterSpace(PixelVector pixel_vector, int diagonal, Range theta_range, float rho_step,
+                        float threshold = 1);
 
     Image image();  // cria uma imagem com base no espaço
 };
@@ -82,15 +82,15 @@ inline float GetDiagonalLength(Image image) {
     return sqrtf(image.width * image.width + image.height * image.height);
 }
 
-inline unsigned char GetPixel(Image image, int x, int y) {
-    return ((unsigned char *)image.data)[x + y * image.width];
+inline uint8_t GetPixel(Image image, int x, int y) {
+    return ((uint8_t *)image.data)[x + y * image.width];
 }
-inline unsigned char GetPixelSafe(Image image, int x, int y) {
+inline uint8_t GetPixelSafe(Image image, int x, int y) {
     if (static_cast<unsigned>(x) >= static_cast<unsigned>(image.width)
         || static_cast<unsigned>(y) >= static_cast<unsigned>(image.height)) {
         return 0;
     }
-    return ((unsigned char *)image.data)[x + y * image.width];
+    return ((uint8_t *)image.data)[x + y * image.width];
 }
 
 inline float GetPixelF(Image image, int x, int y) {
