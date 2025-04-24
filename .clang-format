@@ -2,6 +2,24 @@ BasedOnStyle: Google
 IndentWidth: 4
 ColumnLimit: 100
 AccessModifierOffset: -4
+MaxEmptyLinesToKeep: 4
+SpacesBeforeTrailingComments: 2
+
 AlignOperands: AlignAfterOperator
 BreakBeforeBinaryOperators: NonAssignment
-MaxEmptyLinesToKeep: 4
+AlignConsecutiveMacros: Consecutive
+
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortCaseExpressionOnASingleLine: true
+
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 1
+
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+  AlignCaseColons: true
+  AlignCaseArrows: true

@@ -21,36 +21,30 @@
 // q01a:  0.192147034, 0.566997519  |  q11a:  0.474519632, 0.566997519
 // modalidade:  0.7393448371, 0.566997519  |  fase:  0.763575606, 0.651364764
 // horizontal spacing: 0.04735  |  vertical spacing: 0.042
-const float Q01A_X = 0.192147034f, Q01A_Y = 0.566997519f;
-const float Q11A_X = 0.474519632f, Q11A_Y = 0.566997519f;
+const float Q01A_X = 0.193147034f, Q01A_Y = 0.563997519f;
+const float Q11A_X = 0.475519632f, Q11A_Y = 0.563997519f;
 // const float MODALIDADE_X = 0.7393448371f, MODALIDADE_Y = 0.566997519f;
-// const float FASE_X = 0.763575606f, FASE_Y = 0.651364764f;
 const float X_ITEM_SPACING = 0.04735f;
 const float Y_ITEM_SPACING = 0.042f;
 
 const char ITEMS_STR[6] = "abcde";
 
 void Reader::image_filter1(Image *image) {
+    ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     ImagePow(image, 1.5);
-    ImageInvert(image);
+    ImageColorInvertFast(image);
 }
 
 void Reader::image_filter2(Image *image) {
-    ImagePow(image, 1.5);
-    ImageInvert(image);
-
     ImageThreshold(image, 60);
-    ImageErode(image, filter2_kernel_size);
-    ImageDilate(image, filter2_kernel_size);
+    ImageErode(image, filter2_kernel_radius);
+    ImageDilate(image, filter2_kernel_radius);
 }
 
 Reading Reader::read(Image image) {
-    Image grayscale = ImageCopy(image);
-    ImageFormat(&grayscale, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-
-    Image image_filtered1 = ImageCopy(grayscale);
-    Image image_filtered2 = ImageCopy(grayscale);
+    Image image_filtered1 = ImageCopy(image);
     image_filter1(&image_filtered1);
+    Image image_filtered2 = ImageCopy(image_filtered1);
     image_filter2(&image_filtered2);
 
     Reading reading{};
@@ -71,7 +65,7 @@ Reading Reader::read(Image image) {
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             float reading1 = read_area(image_filtered1, center.x, center.y);
             float reading2 = read_area(image_filtered2, center.x, center.y);
-            item.choice_readings[c] = lerp(reading1, reading2, choice_lerp_t);
+            item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
         }
         reading.items.push_back(item);
     }
@@ -87,7 +81,7 @@ Reading Reader::read(Image image) {
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
             float reading1 = read_area(image_filtered1, center.x, center.y);
             float reading2 = read_area(image_filtered2, center.x, center.y);
-            item.choice_readings[c] = lerp(reading1, reading2, choice_lerp_t);
+            item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
         }
         reading.items.push_back(item);
     }
@@ -117,6 +111,9 @@ Reading Reader::read(Image image) {
         item.choice = choice_id;
         reading.answer_string.append(&item.choice);
     }
+
+    UnloadImage(image_filtered1);
+    UnloadImage(image_filtered2);
     return reading;
 }
 
@@ -126,6 +123,7 @@ float Reader::read_pixel(Image image, int x, int y) {
     return ((float)((uint8_t *)image.data)[offset]) / 255.0f;
 }
 
+// Retorna porcentagem dos pixels de uma área que estão acima do threshold
 float Reader::read_area(Image image, int x, int y) {
     Vector2 center = {(float)x, (float)y};
     float reading = 0.0f;
@@ -140,20 +138,17 @@ float Reader::read_area(Image image, int x, int y) {
 
             read_count += 1.0f;
             float pixel = read_pixel(image, read_coords.x, read_coords.y);
-            if (pixel >= pixel_threshold) {
-                reading += pixel;
-            }
+            if (pixel >= pixel_threshold) { reading += pixel; }
         }
     }
 
     return reading / read_count;
 }
 
+// Desenha o output de uma leitura na teal
 void Reader::draw_reading(Reading reading) {
     std::array<Vector2, 4> rectangle = reading.rectangle;
-    for (Vector2 corner : rectangle) {
-        DrawCircleV(corner, 5.0f, RED);
-    }
+    for (Vector2 corner : rectangle) { DrawCircleV(corner, 5.0f, RED); }
 
     for (int i = 0; i < 10; i++) {
         float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float)i;
@@ -187,15 +182,16 @@ void Reader::draw_reading(Reading reading) {
     }
 }
 
-const Range THETA_RANGE_H = {-20.0f, 20.0f, 1.0f};
-const Range THETA_RANGE_V1 = {-90.0f, -70.0f, 1.0f};
-const Range THETA_RANGE_V2 = {70.0f, 90.0f, 1.0f};
+const Range THETA_RANGE_H = {-10.0f, 10.0f, 1.0f};
+const Range THETA_RANGE_V1 = {-90.0f, -80.0f, 1.0f};
+const Range THETA_RANGE_V2 = {80.0f, 90.0f, 1.0f};
 const float RHO_STEP = 1.0f;
+const float HOUGH_THRESHOLD = 0.5f;
 
-const int BLOCK_WIDTH = 116;
-const int BLOCK_HEIGHT = 116;
-const int BLOCK_X1 = 0, BLOCK_X2 = 1148;
-const int BLOCK_Y1 = 0, BLOCK_Y2 = 749;
+const int BLOCK_WIDTH = 120;
+const int BLOCK_HEIGHT = 90;
+const int BLOCK_X1 = 0, BLOCK_X2 = 1144;
+const int BLOCK_Y1 = 0, BLOCK_Y2 = 774;
 
 const Rectangle BLOCKS[4] = {
     {BLOCK_X1, BLOCK_Y1, BLOCK_WIDTH, BLOCK_HEIGHT},
@@ -204,23 +200,35 @@ const Rectangle BLOCKS[4] = {
     {BLOCK_X2, BLOCK_Y2, BLOCK_WIDTH, BLOCK_HEIGHT},
 };
 
+void Reader::image_filter_hough(Image *image) {
+    ImageKernelConvolutionFast(image, KERNEL_BOX_BLUR);  // Blur,
+    ImageKernelConvolutionFast(image, KERNEL_LAPLACE);   // then sharpen!
+    ImageThreshold(image, 90);                           // Filter for the darkest pixels
+    ImageNormalizedGradient(image);                      // Edge detection
+    ImageThreshold(image, 1);                            // Turns into a pure BW image
+}
+
+// TODO: There might be a better way of finding the reading rectangle;
+// grouping pixels and finding the one group closest to the corner, etc.
 std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
     std::array<Vector2, 4> rectangle{};
+
     int block_counter = 0;
     for (Rectangle block_rect : BLOCKS) {
         Image block_img = ImageCopy(image);
         ImageCrop(&block_img, block_rect);
 
-        ImageThreshold(&block_img, 90);
-        ImageNormalizedGradient(&block_img);
-        ImageThreshold(&block_img, 1);
+        image_filter_hough(&block_img);
 
-        int diagonal = GetDiagonalLength(&block_img);
-        PixelVector white_pixels = FilterImageThreshold(&block_img, 255);
+        int diagonal = GetDiagonalLength(block_img);
+        PixelVector white_pixels = FilterImageThreshold(block_img, 255);
 
-        HoughParameterSpace pspace_h(&white_pixels, diagonal, THETA_RANGE_H, RHO_STEP, 0.5);
-        HoughParameterSpace pspace_v1(&white_pixels, diagonal, THETA_RANGE_V1, RHO_STEP, 0.5);
-        HoughParameterSpace pspace_v2(&white_pixels, diagonal, THETA_RANGE_V2, RHO_STEP, 0.5);
+        HoughParameterSpace pspace_h(white_pixels, diagonal, THETA_RANGE_H, RHO_STEP,
+                                     HOUGH_THRESHOLD);
+        HoughParameterSpace pspace_v1(white_pixels, diagonal, THETA_RANGE_V1, RHO_STEP,
+                                      HOUGH_THRESHOLD);
+        HoughParameterSpace pspace_v2(white_pixels, diagonal, THETA_RANGE_V2, RHO_STEP,
+                                      HOUGH_THRESHOLD);
 
         Line max_h = *pspace_h.max;
         Line max_v1 = *pspace_v1.max;
@@ -228,6 +236,8 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
 
         Line line1 = max_h;
         Line line2 = max_v1.count > max_v2.count ? max_v1 : max_v2;
+
+        printf("%d > line1: %d | line2: %d\n", block_counter, line1.count, line2.count);
 
         Vector2 intersection = IntersectionPoint(line1, line2);
         intersection.x += block_rect.x;
