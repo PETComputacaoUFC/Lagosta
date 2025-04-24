@@ -12,7 +12,6 @@ AlignConsecutiveMacros: Consecutive
 AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortCaseExpressionOnASingleLine: true
-IndentGotoLabels: true
 
 AlignTrailingComments:
   Kind: Always
