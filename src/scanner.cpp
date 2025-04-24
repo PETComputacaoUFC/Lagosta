@@ -17,7 +17,6 @@ void PrintDeviceOpts(SANE_Handle handle) {
     sane_control_option(handle, 0, SANE_ACTION_GET_VALUE, &num_opts, NULL);
     printf("Found %d options:\n", num_opts);
 
-
     for (int opt = 1; opt < num_opts; opt++) {
         const SANE_Option_Descriptor *opt_descriptor = sane_get_option_descriptor(handle, opt);
         if (opt_descriptor->type == 5) {

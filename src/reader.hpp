@@ -48,7 +48,7 @@ public:
     float choice_lerp_t = 0.625f;  // weight of filters in reading (filter1=0.0, filter2=1.0)
     float double_mark_threshold = 0.1f;  // difference between mark readings to count double mark
 
-    int filter2_kernel_radius = 2;  // size of erode/dilate kernel used in filter 2
+    int filter2_kernel_radius = 2;       // size of erode/dilate kernel used in filter 2
 
     Reading read(Image image);
     void draw_reading(Reading reading);
