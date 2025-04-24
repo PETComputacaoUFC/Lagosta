@@ -13,6 +13,7 @@ void ImageDilate(Image *image, int kernel_radius) {
     size_t img_memsize = image->width * image->height;
     uint8_t *image_data = (uint8_t *)image->data;
     uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
+    memcpy(image_copy, image_data, img_memsize);
 
     auto lambda = [image, image_data, image_copy, img_memsize, kernel_radius](int start_row,
                                                                               int end_row) {
@@ -50,6 +51,7 @@ void ImageErode(Image *image, int kernel_radius) {
     size_t img_memsize = image->width * image->height;
     uint8_t *image_data = (uint8_t *)image->data;
     uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
+    memcpy(image_copy, image_data, img_memsize);
 
     auto lambda = [image, image_data, image_copy, img_memsize, kernel_radius](int start_row,
                                                                               int end_row) {
