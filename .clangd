@@ -1,6 +1,6 @@
 If:
     # Set compile flags for only C++ since it's the language we're using.
-    # This makes the LSP stop throwing warnings for the include files.
+    # This makes the LSP stop throwing warnings for the C include files.
     PathExclude: [.*\.c, .*\.h]
 CompileFlags:
     Add:
