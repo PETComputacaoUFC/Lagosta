@@ -12,26 +12,23 @@ enum ReadMode : uint8_t {
 };
 
 // TODO: Implement reading errors
-enum ReadError {
-    AZTEC_NOT_FOUND,
-};
 enum ReadWarning {
+    BARCODE_NOT_FOUND,
     IMPRECISE_READING_RECTANGLE,
     TOO_MANY_EMPTY_CHOICES,
 };
 
 struct Item {
-    // TODO: Change choice from char to enum
     char choice = '0';
     std::vector<float> choice_readings;
 };
 
 struct Reading {
     std::string answer_string = "";
-    std::array<Vector2, 4> rectangle;
-    std::vector<ReadError> reading_errors;
-    std::vector<ReadWarning> reading_warnings;
-    std::vector<Item> items = std::vector<Item>(20);  // questões
+    std::string barcode_string = "";
+    std::array<Vector2, 4> rectangle;    
+    std::vector<ReadWarning> warnings;
+    std::vector<Item> items;  // questões
     // TODO: Headers
 };
 
@@ -39,11 +36,14 @@ struct Reading {
 struct ReadingBox {};
 
 struct Reader {
+private:
+    std::vector<ReadWarning> warnings;
+
 public:
     ReadMode read_mode;
 
     int read_radius = 7;           // radius around the center of the item the reader will scan
-    float area_threshold = 0.6f;   // threshold that defines if a choice is considered as marked
+    float area_threshold = 0.5f;   // threshold that defines if a choice is considered as marked
     float pixel_threshold = 0.4f;  // threshold that defines if a pixel is read as marked
     float choice_lerp_t = 0.625f;  // weight of filters in reading (filter1=0.0, filter2=1.0)
     float double_mark_threshold = 0.1f;  // difference between mark readings to count double mark

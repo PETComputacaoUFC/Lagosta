@@ -6,7 +6,6 @@
 #include "reader.hpp"
 #include "scanner.hpp"  // TODO: if in Windows, don't use SANE
 #define CLAY_IMPLEMENTATION
-#include "ZXing/ReadBarcode.h"
 #include "clay.h"
 #include "clay_renderer_raylib.c"
 
@@ -47,24 +46,7 @@ int main(void) {
     Camera2D camera = {};
     camera.zoom = 0.8f;
 
-
-    Image img = LoadImage("resources/scans_teste_oci/scan0003.png");
-
-    /* ==== LEITURA GABARITO ==== */
-    reading = reader.read(img);
-    printf("  > Gabarito: %s\n", reading.answer_string.c_str());
-
-    /* ==== LEITURA AZTEC CODE ==== */
-    auto image_view =
-        ZXing::ImageView((uint8_t*)img.data, img.width, img.height, ZXing::ImageFormat::Lum);
-    auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
-    auto barcode = ZXing::ReadBarcode(image_view, options);
-    printf("  > Aztec: %s\n", barcode.text().c_str());
-
-    reader.image_filter_hough(&img);
-    texture = LoadTextureFromImage(img);
-
-    bool update_reading = false;
+    bool update_reading = true;
     while (!WindowShouldClose()) {
         /* ==== UPDATE ==== */
         if (IsKeyPressed(KEY_LEFT)) {
@@ -90,43 +72,9 @@ int main(void) {
             /* ==== LEITURA GABARITO ==== */
             reading = reader.read(img_gabarito);
             printf("  > Gabarito: %s\n", reading.answer_string.c_str());
+            printf("  > Aztec: %s\n", reading.barcode_string.c_str());
 
-            /* ==== LEITURA AZTEC CODE ==== */
-            ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-            unsigned char* img_data = (unsigned char*)img_gabarito.data;
-            auto image = ZXing::ImageView(img_data, img_gabarito.width, img_gabarito.height,
-                                          ZXing::ImageFormat::Lum);
-            auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
-            auto barcode = ZXing::ReadBarcode(image, options);
-            printf("  > Aztec: %s\n", barcode.text().c_str());
-
-            reader.image_filter_hough(&img_gabarito);
-            texture = LoadTextureFromImage(img_gabarito);
-        }
-
-        if (IsKeyPressed(KEY_SPACE)) {
-            /* ==== SCAN DE IMAGEM ==== */
-            SANE_Int sane_version;
-            sane_init(&sane_version, nullptr);
-            SANE_Handle handler = GetScanner("000000000YP76T4DPR1a");
-            Image img_gabarito = ImageFromScanner(handler);
-            sane_exit();
-            // ExportImage(img, "scan.png");
-
-            /* ==== LEITURA GABARITO ==== */
-            reading = reader.read(img_gabarito);
-            printf("  > Gabarito: %s\n", reading.answer_string.c_str());
-
-            /* ==== LEITURA AZTEC CODE ==== */
-            ImageFormat(&img_gabarito, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-            unsigned char* img_data = (unsigned char*)img_gabarito.data;
-            auto image = ZXing::ImageView(img_data, img_gabarito.width, img_gabarito.height,
-                                          ZXing::ImageFormat::Lum);
-            auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
-            auto barcode = ZXing::ReadBarcode(image, options);
-            printf("  > Aztec: %s\n", barcode.text().c_str());
-
-            reader.image_filter_hough(&img_gabarito);
+            reader.image_filter1(&img_gabarito);
             texture = LoadTextureFromImage(img_gabarito);
         }
 

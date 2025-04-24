@@ -2,6 +2,8 @@
 
 #include <array>
 
+#include "ZXing/ReadBarcode.h"
+#include "ZXing/ReaderOptions.h"
 #include "imgtools/filters.hpp"
 #include "imgtools/imgtools.hpp"
 #include "raylib.h"
@@ -48,12 +50,23 @@ Reading Reader::read(Image image) {
     image_filter2(&image_filtered2);
 
     Reading reading{};
+    reading.items.reserve(20);
     reading.answer_string.clear();
     reading.items.clear();
 
-    reading.rectangle = get_reading_rectangle(image);
-    std::array<Vector2, 4> rectangle = reading.rectangle;
+    std::array<Vector2, 4> rectangle = get_reading_rectangle(image);
+    reading.rectangle = rectangle;
 
+    /* ==== READING BARCODE ==== */
+    unsigned char *img_data = (unsigned char *)image.data;
+    ZXing::ImageView barcode_image_view(img_data, image.width, image.height,
+                                        ZXing::ImageFormat::Lum);
+    ZXing::ReaderOptions options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
+    ZXing::Barcode barcode = ZXing::ReadBarcode(barcode_image_view, options);
+    reading.barcode_string = barcode.text();
+    if (reading.barcode_string.empty()) { reading.warnings.push_back(BARCODE_NOT_FOUND); }
+
+    /* ==== READING ITEMS ==== */
     for (int i = 0; i < 10; i++) {
         Item item = {-1, std::vector<float>(5)};
         float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float)i;
@@ -145,6 +158,8 @@ float Reader::read_area(Image image, int x, int y) {
     return reading / read_count;
 }
 
+#define ORANGE_T CLITERAL(Color){255, 161, 0, 128}    // Orange
+#define PURPLE_T CLITERAL(Color){200, 122, 255, 128}  // Purple
 // Desenha o output de uma leitura na teal
 void Reader::draw_reading(Reading reading) {
     std::array<Vector2, 4> rectangle = reading.rectangle;
@@ -161,7 +176,8 @@ void Reader::draw_reading(Reading reading) {
             char text[6];
             sprintf(text, "%.2f", reading.items[i].choice_readings[c]);
             DrawText(text, center.x, center.y, 20, YELLOW);
-            DrawCircleV(center, 5.0f, reading.items[i].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
+            DrawCircleV(center, read_radius,
+                        reading.items[i].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
         }
     }
 
@@ -176,8 +192,8 @@ void Reader::draw_reading(Reading reading) {
             char text[6];
             sprintf(text, "%.2f", reading.items[i + 10].choice_readings[c]);
             DrawText(text, center.x, center.y, 20, YELLOW);
-            DrawCircleV(center, 5.0f,
-                        reading.items[i + 10].choice == ITEMS_STR[c] ? ORANGE : PURPLE);
+            DrawCircleV(center, read_radius,
+                        reading.items[i + 10].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
         }
     }
 }
