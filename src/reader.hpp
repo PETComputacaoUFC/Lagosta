@@ -14,7 +14,7 @@ enum ReadMode : uint8_t {
 enum ReadWarning {
     BARCODE_NOT_FOUND,
     IMPRECISE_READING_RECTANGLE,
-    TOO_MANY_EMPTY_CHOICES,
+    TOO_MANY_NULL_CHOICES,
 };
 
 
@@ -94,17 +94,7 @@ const ReadingBox OCI_MANUAL_READING_BOX = {
 const ReadingBox OCI_AUTO_READING_BOX = {};
 // clang-format on
 
-
-
-
 struct Reader {
-private:
-    std::vector<ReadWarning> warnings;
-    std::array<Vector2, 4> reading_rectangle;
-    Image image_filtered1;
-    Image image_filtered2;
-
-public:
     ReadMode read_mode = SAMPLE_CIRCLE;
     ReadingBox reading_box = OCI_MANUAL_READING_BOX;
 
@@ -123,6 +113,8 @@ public:
     void image_filter_hough(Image *image);
     float read_pixel(Image image, int x, int y);
     float read_area(Image image, int x, int y);
-    std::vector<Item> read_item_group(ItemGroup item_group);
-    std::array<Vector2, 4> get_reading_rectangle(Image image);
+    std::vector<Item> read_item_group(ItemGroup item_group,
+                                      std::array<Vector2, 4> reading_rectangle,
+                                      Image image_filtered1, Image image_filtered2);
+    std::array<Vector2, 4> get_reading_rectangle(Image image, std::vector<ReadWarning> *warnings);
 };

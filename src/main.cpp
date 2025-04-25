@@ -73,7 +73,9 @@ int main(void) {
             reading = reader.read(img_gabarito);
             printf("  > Gabarito: %s\n", reading.answer_string.c_str());
             printf("  > Aztec: %s\n", reading.barcode_string.c_str());
-            printf("  > Warnings: %d\n", (int)reading.warnings.size());
+            printf("  > Warnings: ");
+            for (ReadWarning w : reading.warnings) { printf("%d, ", w); }
+            printf("\n");
 
             reader.image_filter1(&img_gabarito);
             texture = LoadTextureFromImage(img_gabarito);

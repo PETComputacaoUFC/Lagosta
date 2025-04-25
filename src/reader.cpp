@@ -35,18 +35,11 @@ void Reader::image_filter_hough(Image *image) {
 Reading Reader::read(Image image) {
     // we'll store warnings inside the reader's vector, then copie the
     // to the reading in the end.
-    warnings.clear();
-    image_filtered1 = ImageCopy(image);
-    image_filter1(&image_filtered1);
-    image_filtered2 = ImageCopy(image_filtered1);
-    image_filter2(&image_filtered2);
-
+    std::vector<ReadWarning> warnings;
     Reading reading{};
     reading.items.reserve(20);
-    reading.answer_string.clear();
-    reading.items.clear();
 
-    reading_rectangle = get_reading_rectangle(image);
+    std::array<Vector2, 4> reading_rectangle = get_reading_rectangle(image, &warnings);
     reading.reading_rectangle = reading_rectangle;
 
     /* ==== READING BARCODE ==== */
@@ -59,22 +52,38 @@ Reading Reader::read(Image image) {
     if (reading.barcode_string.empty()) { warnings.push_back(BARCODE_NOT_FOUND); }
 
     /* ==== READING ITEMS ==== */
+    Image image_filtered1 = ImageCopy(image);
+    image_filter1(&image_filtered1);
+    Image image_filtered2 = ImageCopy(image_filtered1);
+    image_filter2(&image_filtered2);
+
+    float item_counter = 0;
+    float null_counter = 0;
     for (ItemGroup ig : reading_box.item_groups) {
-        std::vector<Item> ig_items = read_item_group(ig);
+        std::vector<Item> ig_items =
+            read_item_group(ig, reading_rectangle, image_filtered1, image_filtered2);
         for (Item item : ig_items) {
             reading.items.push_back(item);
             reading.answer_string.push_back(item.choice);
+            null_counter += item.choice == '0' || item.choice == 'X';
+            item_counter++;
         }
     }
 
     /* ==== READING HEADERS ==== */
     for (ItemGroup hg : reading_box.header_groups) {
-        std::vector<Item> hg_items = read_item_group(hg);
+        std::vector<Item> hg_items =
+            read_item_group(hg, reading_rectangle, image_filtered1, image_filtered2);
         for (Item item : hg_items) {
             reading.headers.push_back(item);
             reading.answer_string.push_back(item.choice);
+            null_counter += item.choice == '0' || item.choice == 'X';
+            item_counter++;
         }
     }
+
+    // Emite um aviso se mais de 40% dos itens forem nulos
+    if (null_counter > 0.4 * item_counter) { warnings.push_back(TOO_MANY_NULL_CHOICES); }
 
     // this actually copies the vector, which is what we want.
     reading.warnings = warnings;
@@ -112,7 +121,9 @@ float Reader::read_area(Image image, int x, int y) {
     return reading / read_count;
 }
 
-std::vector<Item> Reader::read_item_group(ItemGroup item_group) {
+std::vector<Item> Reader::read_item_group(ItemGroup item_group,
+                                          std::array<Vector2, 4> reading_rectangle,
+                                          Image image_filtered1, Image image_filtered2) {
     std::vector<Item> items;
 
     for (int i = 0; i < item_group.num_items; i++) {
@@ -151,13 +162,13 @@ std::vector<Item> Reader::read_item_group(ItemGroup item_group) {
         item.choice = choice_id;
         items.push_back(item);
     }
-    
+
     return items;
 }
 
 #define ORANGE_T CLITERAL(Color){255, 161, 0, 128}    // Orange
 #define PURPLE_T CLITERAL(Color){200, 122, 255, 128}  // Purple
-// Desenha o output de uma leitura na teal
+// Desenha o output de uma leitura na tela
 void Reader::draw_reading(Reading reading) {
     std::array<Vector2, 4> reading_rectangle = reading.reading_rectangle;
     for (Vector2 corner : reading_rectangle) { DrawCircleV(corner, 5.0f, RED); }
@@ -195,7 +206,8 @@ const float HOUGH_THRESHOLD = 0.5f;
 // TODO: There might be a better way of finding the reading rectangle;
 // grouping pixels and finding the one group closest to the corner, etc.
 // Also, maybe detecting 3 corners and finding the last one based on angles...
-std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
+std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
+                                                     std::vector<ReadWarning> *warnings) {
     std::array<Vector2, 4> rectangle{};
 
     int block_counter = 0;
@@ -236,7 +248,7 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
         block_counter++;
     }
 
-    if (imprecise) { warnings.push_back(IMPRECISE_READING_RECTANGLE); }
+    if (imprecise) { warnings->push_back(IMPRECISE_READING_RECTANGLE); }
 
     return rectangle;
 }
