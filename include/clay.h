@@ -33,7 +33,7 @@
     (defined(__STDC__) && __STDC__ == 1 && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || \
     defined(_MSC_VER) \
 )
-// #error "Clay requires C99, C++20, or MSVC"
+#error "Clay requires C99, C++20, or MSVC"
 #endif
 
 #ifdef CLAY_WASM
@@ -1392,6 +1392,7 @@ uint64_t Clay__HashData(const uint8_t* data, size_t length) {
     Clay__SIMDARXMix(&v2, &v3);
     v0 = _mm_add_epi64(v0, v2);
     v1 = _mm_add_epi64(v1, v3);
+    v0 = _mm_add_epi64(v0, v1);
 
     uint64_t result[2];
     _mm_storeu_si128((__m128i*)result, v0);
@@ -1445,6 +1446,7 @@ uint64_t Clay__HashData(const uint8_t* data, size_t length) {
     Clay__SIMDARXMix(&v2, &v3);
     v0 = vaddq_u64(v0, v2);
     v1 = vaddq_u64(v1, v3);
+    v0 = vaddq_u64(v0, v1);
 
     uint64_t result[2];
     vst1q_u64(result, v0);
@@ -4118,11 +4120,15 @@ Clay_ScrollContainerData Clay_GetScrollContainerData(Clay_ElementId id) {
     for (int32_t i = 0; i < context->scrollContainerDatas.length; ++i) {
         Clay__ScrollContainerDataInternal *scrollContainerData = Clay__ScrollContainerDataInternalArray_Get(&context->scrollContainerDatas, i);
         if (scrollContainerData->elementId == id.id) {
+            Clay_ScrollElementConfig *scrollElementConfig = Clay__FindElementConfigWithType(scrollContainerData->layoutElement, CLAY__ELEMENT_CONFIG_TYPE_SCROLL).scrollElementConfig;
+            if (!scrollElementConfig) { // This can happen on the first frame before a scroll container is declared
+                return CLAY__INIT(Clay_ScrollContainerData) CLAY__DEFAULT_STRUCT;
+            }
             return CLAY__INIT(Clay_ScrollContainerData) {
                 .scrollPosition = &scrollContainerData->scrollPosition,
                 .scrollContainerDimensions = { scrollContainerData->boundingBox.width, scrollContainerData->boundingBox.height },
                 .contentDimensions = scrollContainerData->contentSize,
-                .config = *Clay__FindElementConfigWithType(scrollContainerData->layoutElement, CLAY__ELEMENT_CONFIG_TYPE_SCROLL).scrollElementConfig,
+                .config = *scrollElementConfig,
                 .found = true
             };
         }

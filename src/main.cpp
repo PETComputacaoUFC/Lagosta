@@ -1,102 +1,78 @@
-#include <algorithm>
-#include <cstdio>
-#include <string>
-
-#include "raylib.h"
-#include "reader.hpp"
-#include "scanner.hpp"  // TODO: if in Windows, don't use SANE
 #define CLAY_IMPLEMENTATION
 #include "clay.h"
 #include "clay_renderer_raylib.c"
+#include "raylib.h"
 
+void clay_error_handler(Clay_ErrorData errorData) { printf("%s", errorData.errorText.chars); }
 
-void HandleClayErrors(Clay_ErrorData errorData) { printf("%s", errorData.errorText.chars); }
-
-
+// Your project's main entry
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
-    Clay_Raylib_Initialize(
-        1012, 720, "Lagosta",
-        FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT);
-    uint64_t clayRequiredMemory = Clay_MinMemorySize();
-    Clay_Arena clayMemoryTop =
-        Clay_CreateArenaWithCapacityAndMemory(clayRequiredMemory, malloc(clayRequiredMemory));
-    Clay_Initialize(
-        clayMemoryTop,
-        Clay_Dimensions{.width = (float)GetScreenWidth(), .height = (float)GetScreenHeight()},
-        Clay_ErrorHandler{HandleClayErrors});
 
-    // Setting default clay font
     Font fonts[1];
-    fonts[0] = LoadFontEx("resources/fonts/NunitoSans-Regular.ttf", 48, 0, 400);
-    SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
+    // ClayMan clayMan(1024, 786, Raylib_MeasureText, fonts);
+
+    uint64_t clayRequiredMemory = Clay_MinMemorySize();
+    Clay_Arena clayMemory =
+        Clay_CreateArenaWithCapacityAndMemory(clayRequiredMemory, malloc(clayRequiredMemory));
+    Clay_Initialize(clayMemory, {1024, 786}, (Clay_ErrorHandler)clay_error_handler);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    // Inicializando leitura interativa do gabarito
-    Reader reader{};
+    Clay_Raylib_Initialize(
+        1024, 786, "Lagosta",
+        FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT);
+    // Load fonts after initializing raylib
+    fonts[0] = LoadFontEx("resources/fonts/NunitoSans-Regular.ttf", 48, 0, 400);
+    SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
 
-    FilePathList pathlist = LoadDirectoryFiles("resources/scans_teste_oci");
-    std::vector<std::string> image_paths;
-    size_t path_index = 0;
-    for (size_t p = 0; p < pathlist.count; p++) { image_paths.push_back(pathlist.paths[p]); }
-    std::sort(image_paths.begin(), image_paths.end());
-    Image img_gabarito;
-    Texture texture;
-    Reading reading;
-    UnloadDirectoryFiles(pathlist);
-    
-    Camera2D camera = {};
-    camera.zoom = 0.8f;
 
-    bool update_reading = true;
+
+
+    // Raylib render loop
     while (!WindowShouldClose()) {
-        /* ==== UPDATE ==== */
-        if (IsKeyPressed(KEY_LEFT)) {
-            if (path_index > 0) {
-                path_index -= 1;
-                update_reading = true;
-            }
+        if (IsKeyPressed(KEY_D)) { Clay_SetDebugModeEnabled(!Clay_IsDebugModeEnabled()); }
+
+        // Raylib mouse position and scroll vectors
+        Vector2 mousePosition = GetMousePosition();
+        Vector2 scrollDelta = GetMouseWheelMoveV();
+        Clay_SetLayoutDimensions({(float)GetScreenWidth(), (float)GetScreenHeight()});
+        Clay_SetPointerState({mousePosition.x, mousePosition.y}, IsMouseButtonDown(0));
+        Clay_UpdateScrollContainers(true, {scrollDelta.x, scrollDelta.y}, GetFrameTime());
+
+        // Prep for layout
+        Clay_BeginLayout();
+
+        // Example full-window parent container
+        CLAY({// Configure element
+              .id = CLAY_ID("Root"),
+              .layout =
+                  {
+                      .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                      .padding = CLAY_PADDING_ALL(16),
+                      .childGap = 16,
+                      .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                  },
+              .backgroundColor = {50, 50, 50, 255},
+              .border = {
+                  .color = {50, 50, 180, 255},
+                  .width = {1, 1, 1, 1},
+              }}) {  // Child elements in here
+            CLAY_TEXT(CLAY_STRING("Hello World"),
+                      CLAY_TEXT_CONFIG({.textColor = {255, 255, 255, 255}, .fontSize = 24}));
+            CLAY_TEXT(CLAY_STRING("Hello World 2"),
+                      CLAY_TEXT_CONFIG({.textColor = {255, 255, 255, 255}, .fontSize = 24}));
         }
+        // );
 
-        if (IsKeyPressed(KEY_RIGHT)) {
-            if (path_index < image_paths.size() - 1) {
-                path_index += 1;
-                update_reading = true;
-            }
-        }
+        // Pass your layout to the manager to get the render commands
+        Clay_RenderCommandArray renderCommands = Clay_EndLayout();
 
-        if (update_reading) {
-            update_reading = false;
-            std::string img_path = image_paths[path_index];
-            img_gabarito = LoadImage(img_path.c_str());
-            printf("\nFILE: %s\n", img_path.c_str());
-
-            /* ==== LEITURA GABARITO ==== */
-            reading = reader.read(img_gabarito);
-            printf("  > Gabarito: %s\n", reading.get_answer_string().c_str());
-            printf("  > Aztec: %s\n", reading.barcode_string.c_str());
-            printf("  > Warnings: ");
-            for (ReadWarning w : reading.warnings) { printf("%d, ", w); }
-            printf("\n");
-
-            reader.image_filter1(&img_gabarito);
-            texture = LoadTextureFromImage(img_gabarito);
-        }
-
-        /* ==== DRAWING ==== */
-        BeginDrawing();
-        ClearBackground(BLACK);
-        BeginMode2D(camera);
-
-        DrawTexture(texture, 0, 0, WHITE);
-        reader.draw_reading(reading);
-
-        EndMode2D();
-        EndDrawing();
+        BeginDrawing();                             // Start Raylib's draw block
+        ClearBackground(BLACK);                     // Raylib's clear function
+        Clay_Raylib_Render(renderCommands, fonts);  // Render Clay Layout
+        EndDrawing();                               // End Raylib's draw block
     }
-
+    
     UnloadFont(fonts[0]);
-    UnloadTexture(texture);
-    UnloadImage(img_gabarito);
-    Clay_Raylib_Close();
+    return 0;
 }
