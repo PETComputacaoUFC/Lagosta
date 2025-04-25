@@ -9,26 +9,6 @@
 #include "raylib.h"
 #include "raymath.h"
 
-// base.png COORDS:
-// rectangle:  63, 63  -->  1260, 869  |  (1197x806)
-// q01a:  293, 520  |  q11a:  631, 520
-// modalidade:  948, 520  |  fase:  977, 588
-// horizontal spacing: 57  |  vertical spacing: 34
-//
-// relative values:
-// q01a: 230, 457  |  q11a: 568, 457
-// modalidade: 885, 457  |  fase:  914, 525
-//
-// as percentages of the rectangle (USE THESE VALUES IN Vector2Lerp):
-// q01a:  0.192147034, 0.566997519  |  q11a:  0.474519632, 0.566997519
-// modalidade:  0.7393448371, 0.566997519  |  fase:  0.763575606, 0.651364764
-// horizontal spacing: 0.04735  |  vertical spacing: 0.042
-const float Q01A_X = 0.193147034f, Q01A_Y = 0.563997519f;
-const float Q11A_X = 0.475519632f, Q11A_Y = 0.563997519f;
-// const float MODALIDADE_X = 0.7393448371f, MODALIDADE_Y = 0.566997519f;
-const float X_ITEM_SPACING = 0.04735f;
-const float Y_ITEM_SPACING = 0.042f;
-
 const char ITEMS_STR[6] = "abcde";
 
 void Reader::image_filter1(Image *image) {
@@ -79,62 +59,44 @@ Reading Reader::read(Image image) {
     if (reading.barcode_string.empty()) { warnings.push_back(BARCODE_NOT_FOUND); }
 
     /* ==== READING ITEMS ==== */
-    for (int i = 0; i < 10; i++) {
-        Item item = {-1, std::vector<float>(5)};
-        float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float)i;
-        for (int c = 0; c < 5; c++) {
-            float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float)c;
-            Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
-            Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
+    for (ItemGroup ig : reading_box.item_groups) {
+        for (int i = 0; i < ig.num_items; i++) {
+            Item item = {-1, std::vector<float>(ig.num_choices)};
 
-            Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            float reading1 = read_area(image_filtered1, center.x, center.y);
-            float reading2 = read_area(image_filtered2, center.x, center.y);
-            item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
-        }
-        reading.items.push_back(item);
-    }
+            float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
+            for (int c = 0; c < ig.num_choices; c++) {
+                float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
+                Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
+                Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
-    for (int i = 0; i < 10; i++) {
-        Item item = {-1, std::vector<float>(5)};
-        float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float)i;
-        for (int c = 0; c < 5; c++) {
-            float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float)c;
-            Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
-            Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
-
-            Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            float reading1 = read_area(image_filtered1, center.x, center.y);
-            float reading2 = read_area(image_filtered2, center.x, center.y);
-            item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
-        }
-        reading.items.push_back(item);
-    }
-
-    for (Item &item : reading.items) {
-        char choice_id = '0';
-        size_t choice_index = 0;
-        float choice_value = -1.0f;
-
-        for (size_t choice = 0; choice < item.choice_readings.size(); choice++) {
-            float reading = item.choice_readings[choice];
-            if (reading > area_threshold && reading > choice_value) {
-                choice_id = ITEMS_STR[choice];
-                choice_index = choice;
-                choice_value = reading;
+                Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+                float reading1 = read_area(image_filtered1, center.x, center.y);
+                float reading2 = read_area(image_filtered2, center.x, center.y);
+                item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
             }
-        }
 
-        // anula a questão caso um item tenha mais de uma marcação
-        for (size_t choice = 0; choice < item.choice_readings.size(); choice++) {
-            if (choice != choice_index
-                && abs(choice_value - item.choice_readings[choice]) <= double_mark_threshold) {
-                choice_id = 'X';
-                break;
+            char choice_id = '0';
+            float choice_value = -1.0f;
+            float second_highest = -1.0f;
+
+            for (int choice = 0; choice < ig.num_choices; choice++) {
+                float reading = item.choice_readings[choice];
+                if (reading > area_threshold && reading > choice_value) {
+                    choice_id = ITEMS_STR[choice];
+                    second_highest = choice_value;
+                    choice_value = reading;
+                } else if (reading > second_highest) {
+                    second_highest = reading;
+                }
             }
+
+            // Invalida a questão se os dois itens mais altos tem valores muito próximos.
+            if (abs(choice_value - second_highest) <= double_mark_threshold) { choice_id = 'X'; }
+
+            item.choice = choice_id;
+            reading.answer_string.append(&item.choice);
+            reading.items.push_back(item);
         }
-        item.choice = choice_id;
-        reading.answer_string.append(&item.choice);
     }
 
     // this actually copies the vector, which is what we want.
@@ -180,35 +142,26 @@ void Reader::draw_reading(Reading reading) {
     std::array<Vector2, 4> rectangle = reading.rectangle;
     for (Vector2 corner : rectangle) { DrawCircleV(corner, 5.0f, RED); }
 
-    for (int i = 0; i < 10; i++) {
-        float y_lerp_amount = Q01A_Y + Y_ITEM_SPACING * (float)i;
-        for (int c = 0; c < 5; c++) {
-            float x_lerp_amount = Q01A_X + X_ITEM_SPACING * (float)c;
-            Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
-            Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
+    int item_counter = 0;
+    for (ItemGroup ig : reading_box.item_groups) {
+        for (int i = 0; i < ig.num_items; i++) {
+            Item item = {-1, std::vector<float>(ig.num_choices)};
 
-            Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            char text[6];
-            sprintf(text, "%.2f", reading.items[i].choice_readings[c]);
-            DrawText(text, center.x, center.y, 20, YELLOW);
-            DrawCircleV(center, read_radius,
-                        reading.items[i].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
-        }
-    }
+            float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
+            for (int c = 0; c < ig.num_choices; c++) {
+                float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
+                Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
+                Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
 
-    for (int i = 0; i < 10; i++) {
-        float y_lerp_amount = Q11A_Y + Y_ITEM_SPACING * (float)i;
-        for (int c = 0; c < 5; c++) {
-            float x_lerp_amount = Q11A_X + X_ITEM_SPACING * (float)c;
-            Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
-            Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
-
-            Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            char text[6];
-            sprintf(text, "%.2f", reading.items[i + 10].choice_readings[c]);
-            DrawText(text, center.x, center.y, 20, YELLOW);
-            DrawCircleV(center, read_radius,
-                        reading.items[i + 10].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
+                Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+                char text[6];
+                sprintf(text, "%.2f", reading.items[item_counter].choice_readings[c]);
+                DrawText(text, center.x, center.y, 20, YELLOW);
+                DrawCircleV(
+                    center, read_radius,
+                    reading.items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
+            }
+            item_counter++;
         }
     }
 }
