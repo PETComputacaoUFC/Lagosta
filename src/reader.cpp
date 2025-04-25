@@ -1,9 +1,6 @@
 #include "reader.hpp"
 
-#include <array>
-
 #include "ZXing/ReadBarcode.h"
-#include "ZXing/ReaderOptions.h"
 #include "imgtools/filters.hpp"
 #include "imgtools/imgtools.hpp"
 #include "raylib.h"
@@ -47,7 +44,8 @@ Reading Reader::read(Image image) {
         unsigned char *img_data = (unsigned char *)image.data;
         ZXing::ImageView barcode_image_view(img_data, image.width, image.height,
                                             ZXing::ImageFormat::Lum);
-        ZXing::ReaderOptions options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
+        ZXing::ReaderOptions options =
+            ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
         ZXing::Barcode barcode = ZXing::ReadBarcode(barcode_image_view, options);
         reading.barcode_string = barcode.text();
         if (reading.barcode_string.empty()) { warnings.push_back(BARCODE_NOT_FOUND); }
@@ -248,7 +246,7 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
         block_counter++;
     }
 
-    if (imprecise) { warnings->push_back(IMPRECISE_READING_RECTANGLE); }
+    if (imprecise && warnings != nullptr) { warnings->push_back(IMPRECISE_READING_RECTANGLE); }
 
     return rectangle;
 }

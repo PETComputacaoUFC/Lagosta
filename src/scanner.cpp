@@ -1,7 +1,5 @@
 #include "scanner.hpp"
 
-#include <sane/sane.h>
-
 #include <cmath>
 #include <cstdint>
 
