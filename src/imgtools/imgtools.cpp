@@ -87,6 +87,7 @@ int CountPixelsInLine(PixelVector pixel_vector, float const theta, float const r
 
 // Constrói o espaço parâmetral de Hough
 void HoughParameterSpace::build_space(PixelVector pixel_vector, float threshold) {
+    if (data != nullptr) { free(data); }
     data = (Line *)malloc(sizeof(Line) * width * height);
 
     // O cálculo de máximo global não é trivial de ser feito em threads.

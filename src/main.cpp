@@ -40,9 +40,11 @@ int main(void) {
     size_t path_index = 0;
     for (size_t p = 0; p < pathlist.count; p++) { image_paths.push_back(pathlist.paths[p]); }
     std::sort(image_paths.begin(), image_paths.end());
+    Image img_gabarito;
     Texture texture;
     Reading reading;
-
+    UnloadDirectoryFiles(pathlist);
+    
     Camera2D camera = {};
     camera.zoom = 0.8f;
 
@@ -66,8 +68,8 @@ int main(void) {
         if (update_reading) {
             update_reading = false;
             std::string img_path = image_paths[path_index];
+            img_gabarito = LoadImage(img_path.c_str());
             printf("\nFILE: %s\n", img_path.c_str());
-            Image img_gabarito = LoadImage(img_path.c_str());
 
             /* ==== LEITURA GABARITO ==== */
             reading = reader.read(img_gabarito);
@@ -93,5 +95,8 @@ int main(void) {
         EndDrawing();
     }
 
+    UnloadFont(fonts[0]);
+    UnloadTexture(texture);
+    UnloadImage(img_gabarito);
     Clay_Raylib_Close();
 }

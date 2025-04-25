@@ -224,6 +224,7 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
         intersection.y += block_rect.y;
 
         rectangle[block_counter] = intersection;
+        UnloadImage(block_img);
 
         block_counter++;
     }

@@ -2,17 +2,17 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <vector>
 
 #include "raylib.h"
 
 struct Kernel {
-    float *data;
+    std::vector<float> data;
     size_t size;
 
-    inline Kernel(float *kernel_data, size_t kernel_size) : data(kernel_data), size(kernel_size) {}
+    inline Kernel(std::vector<float> kernel_data, size_t kernel_size) : data(kernel_data), size(kernel_size) {}
 
-    inline Kernel(float all, size_t kernel_size) : size(kernel_size) {
-        data = (float *)malloc(kernel_size * sizeof(float));
+    inline Kernel(float all, size_t kernel_size) : data(std::vector<float>(kernel_size)), size(kernel_size) {
         for (size_t i = 0; i < kernel_size; i++) { data[i] = all; }
     };
 
@@ -40,7 +40,7 @@ struct Kernel {
 // clang-format off
 const Kernel KERNEL_BOX_BLUR = Kernel{1, 9}.normalized();
 const Kernel KERNEL_LAPLACE = Kernel{
-    (float[9]){
+    {
          0, -1,  0,
         -1,  5, -1,
          0, -1,  0,

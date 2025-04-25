@@ -45,7 +45,7 @@ public:
 
     // Reta (theta,rho) no espaço com maior número de pontos (x,y) associados
     Line *max;
-    Line *data;
+    Line *data = nullptr;
 
     int width;
     int height;
@@ -55,6 +55,13 @@ public:
                         float threshold = 1);
 
     Image image();  // cria uma imagem com base no espaço
+
+    ~HoughParameterSpace() {
+        if (data != nullptr) {
+            free(data);
+            data = nullptr;
+        }
+    }
 };
 
 void DoThreaded(std::function<void(int start, int end)> lambda, int elements);

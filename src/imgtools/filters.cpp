@@ -1,5 +1,7 @@
 #include "filters.hpp"
 
+#include <sys/types.h>
+
 #include <algorithm>
 #include <cstring>
 
@@ -13,19 +15,22 @@ void ImageDilate(Image *image, int kernel_radius) {
     uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
     memcpy(image_copy, image_data, img_memsize);
 
-    auto lambda = [image, image_data, image_copy, img_memsize, kernel_radius](int start_row,
-                                                                              int end_row) {
+    auto lambda = [image, image_copy, kernel_radius](int start_row, int end_row) {
+        int width = image->width;
+        int height = image->height;
         for (int y = start_row; y < end_row; y++) {
-            for (int x = 0; x < image->width; x++) {
-                // offset = x pixels + y * width pixels
-                int copy_offset = x + image->width * y;
+            for (int x = 0; x < width; x++) {
+                int copy_offset = x + width * y;
 
                 for (int i = -kernel_radius; i <= kernel_radius; i++) {
+                    int ky = y + i;
+                    if (ky < 0 || ky >= height - 1) { continue; }
                     for (int j = -kernel_radius; j <= kernel_radius; j++) {
-                        int data_offset = (x + i) + image->width * (y + j);
+                        int kx = x + j;
+                        if (kx < 0 || kx >= width - 1) { continue; }
 
-                        if (data_offset > (int)img_memsize || data_offset < 0) { continue; }
-                        if (image_data[data_offset] == 255) {
+                        uint8_t pixel = GetPixel(*image, kx, ky);
+                        if (pixel == 255) {
                             image_copy[copy_offset] = 255;
                             goto next_pixel;
                         }
@@ -51,19 +56,22 @@ void ImageErode(Image *image, int kernel_radius) {
     uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
     memcpy(image_copy, image_data, img_memsize);
 
-    auto lambda = [image, image_data, image_copy, img_memsize, kernel_radius](int start_row,
-                                                                              int end_row) {
+    auto lambda = [image, image_copy, kernel_radius](int start_row, int end_row) {
+        int width = image->width;
+        int height = image->height;
         for (int y = start_row; y < end_row; y++) {
-            for (int x = 0; x < image->width; x++) {
-                // offset = x pixels + y * width pixels
-                int copy_offset = x + image->width * y;
+            for (int x = 0; x < width; x++) {
+                int copy_offset = x + width * y;
 
                 for (int i = -kernel_radius; i <= kernel_radius; i++) {
+                    int ky = y + i;
+                    if (ky < 0 || ky >= height - 1) { continue; }
                     for (int j = -kernel_radius; j <= kernel_radius; j++) {
-                        int data_offset = (x + i) + image->width * (y + j);
+                        int kx = x + j;
+                        if (kx < 0 || kx >= width - 1) { continue; }
 
-                        if (data_offset > (int)img_memsize || data_offset < 0) { continue; }
-                        if (image_data[data_offset] == 0) {
+                        uint8_t pixel = GetPixel(*image, kx, ky);
+                        if (pixel == 0) {
                             image_copy[copy_offset] = 0;
                             goto next_pixel;
                         }
