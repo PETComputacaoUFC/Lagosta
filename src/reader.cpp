@@ -36,9 +36,9 @@ Reading Reader::read(Image image) {
     // we'll store warnings inside the reader's vector, then copie the
     // to the reading in the end.
     warnings.clear();
-    Image image_filtered1 = ImageCopy(image);
+    image_filtered1 = ImageCopy(image);
     image_filter1(&image_filtered1);
-    Image image_filtered2 = ImageCopy(image_filtered1);
+    image_filtered2 = ImageCopy(image_filtered1);
     image_filter2(&image_filtered2);
 
     Reading reading{};
@@ -46,8 +46,8 @@ Reading Reader::read(Image image) {
     reading.answer_string.clear();
     reading.items.clear();
 
-    std::array<Vector2, 4> rectangle = get_reading_rectangle(image);
-    reading.rectangle = rectangle;
+    reading_rectangle = get_reading_rectangle(image);
+    reading.reading_rectangle = reading_rectangle;
 
     /* ==== READING BARCODE ==== */
     unsigned char *img_data = (unsigned char *)image.data;
@@ -66,8 +66,8 @@ Reading Reader::read(Image image) {
             float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
             for (int c = 0; c < ig.num_choices; c++) {
                 float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
-                Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
-                Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
+                Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
+                Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
 
                 Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
                 float reading1 = read_area(image_filtered1, center.x, center.y);
@@ -139,8 +139,8 @@ float Reader::read_area(Image image, int x, int y) {
 #define PURPLE_T CLITERAL(Color){200, 122, 255, 128}  // Purple
 // Desenha o output de uma leitura na teal
 void Reader::draw_reading(Reading reading) {
-    std::array<Vector2, 4> rectangle = reading.rectangle;
-    for (Vector2 corner : rectangle) { DrawCircleV(corner, 5.0f, RED); }
+    std::array<Vector2, 4> reading_rectangle = reading.reading_rectangle;
+    for (Vector2 corner : reading_rectangle) { DrawCircleV(corner, 5.0f, RED); }
 
     int item_counter = 0;
     for (ItemGroup ig : reading_box.item_groups) {
@@ -150,8 +150,8 @@ void Reader::draw_reading(Reading reading) {
             float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
             for (int c = 0; c < ig.num_choices; c++) {
                 float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
-                Vector2 v1 = Vector2Lerp(rectangle[0], rectangle[1], x_lerp_amount);
-                Vector2 v2 = Vector2Lerp(rectangle[2], rectangle[3], x_lerp_amount);
+                Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
+                Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
 
                 Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
                 char text[6];

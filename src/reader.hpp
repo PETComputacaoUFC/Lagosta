@@ -28,7 +28,7 @@ struct Item {
 struct Reading {
     std::string answer_string = "";
     std::string barcode_string = "";
-    std::array<Vector2, 4> rectangle;
+    std::array<Vector2, 4> reading_rectangle;
     std::vector<ReadWarning> warnings;
     std::vector<Item> items;    // questões
     std::vector<Item> headers;  // cabeçalho
@@ -100,6 +100,9 @@ const ReadingBox OCI_AUTO_READING_BOX = {};
 struct Reader {
 private:
     std::vector<ReadWarning> warnings;
+    std::array<Vector2, 4> reading_rectangle;
+    Image image_filtered1;
+    Image image_filtered2;
 
 public:
     ReadMode read_mode = SAMPLE_CIRCLE;
@@ -120,5 +123,6 @@ public:
     void image_filter_hough(Image *image);
     float read_pixel(Image image, int x, int y);
     float read_area(Image image, int x, int y);
+    std::vector<Item> read_item_group(ItemGroup item_group);
     std::array<Vector2, 4> get_reading_rectangle(Image image);
 };
