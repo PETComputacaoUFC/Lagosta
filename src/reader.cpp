@@ -60,42 +60,19 @@ Reading Reader::read(Image image) {
 
     /* ==== READING ITEMS ==== */
     for (ItemGroup ig : reading_box.item_groups) {
-        for (int i = 0; i < ig.num_items; i++) {
-            Item item = {-1, std::vector<float>(ig.num_choices)};
-
-            float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
-            for (int c = 0; c < ig.num_choices; c++) {
-                float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
-                Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
-                Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
-
-                Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-                float reading1 = read_area(image_filtered1, center.x, center.y);
-                float reading2 = read_area(image_filtered2, center.x, center.y);
-                item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
-            }
-
-            char choice_id = '0';
-            float choice_value = -1.0f;
-            float second_highest = -1.0f;
-
-            for (int choice = 0; choice < ig.num_choices; choice++) {
-                float reading = item.choice_readings[choice];
-                if (reading > area_threshold && reading > choice_value) {
-                    choice_id = ITEMS_STR[choice];
-                    second_highest = choice_value;
-                    choice_value = reading;
-                } else if (reading > second_highest) {
-                    second_highest = reading;
-                }
-            }
-
-            // Invalida a questão se os dois itens mais altos tem valores muito próximos.
-            if (abs(choice_value - second_highest) <= double_mark_threshold) { choice_id = 'X'; }
-
-            item.choice = choice_id;
-            reading.answer_string.append(&item.choice);
+        std::vector<Item> ig_items = read_item_group(ig);
+        for (Item item : ig_items) {
             reading.items.push_back(item);
+            reading.answer_string.push_back(item.choice);
+        }
+    }
+
+    /* ==== READING HEADERS ==== */
+    for (ItemGroup hg : reading_box.header_groups) {
+        std::vector<Item> hg_items = read_item_group(hg);
+        for (Item item : hg_items) {
+            reading.headers.push_back(item);
+            reading.answer_string.push_back(item.choice);
         }
     }
 
@@ -133,6 +110,49 @@ float Reader::read_area(Image image, int x, int y) {
     }
 
     return reading / read_count;
+}
+
+std::vector<Item> Reader::read_item_group(ItemGroup item_group) {
+    std::vector<Item> items;
+
+    for (int i = 0; i < item_group.num_items; i++) {
+        Item item = {-1, std::vector<float>(item_group.num_choices)};
+
+        float y_lerp_amount = item_group.item01a_y + item_group.item_spacing_y * (float)i;
+        for (int c = 0; c < item_group.num_choices; c++) {
+            float x_lerp_amount = item_group.item01a_x + item_group.item_spacing_x * (float)c;
+            Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
+            Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
+
+            Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+            float reading1 = read_area(image_filtered1, center.x, center.y);
+            float reading2 = read_area(image_filtered2, center.x, center.y);
+            item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
+        }
+
+        char choice_id = '0';
+        float choice_value = -1.0f;
+        float second_highest = -1.0f;
+
+        for (int choice = 0; choice < item_group.num_choices; choice++) {
+            float reading = item.choice_readings[choice];
+            if (reading > area_threshold && reading > choice_value) {
+                choice_id = ITEMS_STR[choice];
+                second_highest = choice_value;
+                choice_value = reading;
+            } else if (reading > second_highest) {
+                second_highest = reading;
+            }
+        }
+
+        // Invalida a questão se os dois itens mais altos tem valores muito próximos.
+        if (abs(choice_value - second_highest) <= double_mark_threshold) { choice_id = 'X'; }
+
+        item.choice = choice_id;
+        items.push_back(item);
+    }
+    
+    return items;
 }
 
 #define ORANGE_T CLITERAL(Color){255, 161, 0, 128}    // Orange
