@@ -1,8 +1,9 @@
+#include <sane/sane.h>
+
 #include <string>
 #include <vector>
 
 #include "raylib.h"
-#include "sane/sane.h"
 
 // DON'T USE! This makes SANE crash when closing the device.
 void PrintDeviceOpts(SANE_Handle handle);

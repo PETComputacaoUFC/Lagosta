@@ -1,10 +1,8 @@
 #pragma once
-#include <sys/types.h>
 
 #include <cmath>
 #include <cstdint>
 #include <functional>
-#include <vector>
 
 #include "raylib.h"
 

@@ -1,12 +1,12 @@
 #pragma once
+
 #include <array>
-#include <cstdint>
 #include <string>
 #include <vector>
 
 #include "raylib.h"
 
-enum ReadMode : uint8_t {
+enum ReadMode {
     SAMPLE_SQUARE,  // Averages a square with size 2*read_radius around the item's center.
     SAMPLE_CIRCLE,  // Averages a circle of radius read_radius around the item's center.
 };
