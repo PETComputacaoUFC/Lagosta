@@ -89,10 +89,10 @@ SANE_Handle GetScanner(std::string name_pattern) {
 
 // Returns a pointer to data read from a scanner
 unsigned char *ReadScannerData(SANE_Handle handle) {
-    SANE_Parameters p;
-    sane_get_parameters(handle, &p);
+    SANE_Parameters parameters;
+    sane_get_parameters(handle, &parameters);
 
-    int bytes = p.lines * p.bytes_per_line;
+    int bytes = parameters.lines * parameters.bytes_per_line;
     uint8_t *pixels = (uint8_t *)malloc(bytes);
     uint8_t *img_start = pixels;
     for (int p = 0; p < bytes; p++) { pixels[p] = 255; }
@@ -131,7 +131,7 @@ Image ImageFromScanner(SANE_Handle device_handle) {
     // gives a different result for some reason)
     SANE_Parameters p;
     sane_get_parameters(device_handle, &p);
-    int height = (float)p.lines / (SCANNER_RATIO / A4_RATIO);
+    int height = (int)((float)p.lines / (SCANNER_RATIO / A4_RATIO));
 
     // Reads data from the scanner
     uint8_t *img_start = ReadScannerData(device_handle);

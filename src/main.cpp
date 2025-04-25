@@ -23,8 +23,8 @@ int main(void) {
         Clay_CreateArenaWithCapacityAndMemory(clayRequiredMemory, malloc(clayRequiredMemory));
     Clay_Initialize(
         clayMemoryTop,
-        (Clay_Dimensions){.width = (float)GetScreenWidth(), .height = (float)GetScreenHeight()},
-        (Clay_ErrorHandler){HandleClayErrors});
+        Clay_Dimensions{.width = (float)GetScreenWidth(), .height = (float)GetScreenHeight()},
+        Clay_ErrorHandler{HandleClayErrors});
 
     // Setting default clay font
     Font fonts[1];

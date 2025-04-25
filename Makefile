@@ -1,7 +1,7 @@
 ############### PROJECT CONFIG ###############
 CXX := g++
 CXXFLAGS += -Wall -Wextra -Wno-missing-field-initializers \
-		 	-Iinclude -std=c++17 -O2
+		 	-Iinclude -std=c++20 -O2
 LDFLAGS := -Llib -lraylib -lZXing
 OS_LDFLAGS := -lGL -lm -lpthread -ldl -lrt -lX11 -lsane
 

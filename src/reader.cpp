@@ -136,8 +136,8 @@ std::vector<Item> Reader::read_item_group(ItemGroup item_group,
             Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
 
             Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-            float reading1 = read_area(image_filtered1, center.x, center.y);
-            float reading2 = read_area(image_filtered2, center.x, center.y);
+            float reading1 = read_area(image_filtered1, (int)center.x, (int)center.y);
+            float reading2 = read_area(image_filtered2, (int)center.x, (int)center.y);
             item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
         }
 
@@ -187,7 +187,7 @@ void Reader::draw_reading(Reading reading) {
                 Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
                 char text[6];
                 sprintf(text, "%.2f", reading.items[item_counter].choice_readings[c]);
-                DrawText(text, center.x, center.y, 20, YELLOW);
+                DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
                 DrawCircleV(
                     center, read_radius,
                     reading.items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
@@ -218,7 +218,7 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
 
         image_filter_hough(&block_img);
 
-        int diagonal = GetDiagonalLength(block_img);
+        int diagonal = (int)GetDiagonalLength(block_img);
         PixelVector white_pixels = FilterImageThreshold(block_img, 255);
 
         HoughParameterSpace pspace_h(white_pixels, diagonal, THETA_RANGE_H, RHO_STEP,
