@@ -43,6 +43,15 @@ void Reader::image_filter2(Image *image) {
     ImageDilate(image, filter2_kernel_radius);
 }
 
+// Pre-processing filter for applying the hough transform
+void Reader::image_filter_hough(Image *image) {
+    ImageKernelConvolutionFast(image, KERNEL_BOX_BLUR);  // Blur,
+    ImageKernelConvolutionFast(image, KERNEL_LAPLACE);   // then sharpen!
+    ImageThreshold(image, 90);                           // Filter for the darkest pixels
+    ImageNormalizedGradient(image);                      // Edge detection
+    ImageThreshold(image, 1);                            // Turns into a pure BW image
+}
+
 Reading Reader::read(Image image) {
     // we'll store warnings inside the reader's vector, then copie the
     // to the reading in the end.
@@ -210,26 +219,6 @@ const Range THETA_RANGE_V2 = {80.0f, 90.0f, 1.0f};
 const float RHO_STEP = 1.0f;
 const float HOUGH_THRESHOLD = 0.5f;
 
-const int BLOCK_WIDTH = 120;
-const int BLOCK_HEIGHT = 90;
-const int BLOCK_X1 = 0, BLOCK_X2 = 1144;
-const int BLOCK_Y1 = 0, BLOCK_Y2 = 774;
-
-const Rectangle BLOCKS[4] = {
-    {BLOCK_X1, BLOCK_Y1, BLOCK_WIDTH, BLOCK_HEIGHT},
-    {BLOCK_X2, BLOCK_Y1, BLOCK_WIDTH, BLOCK_HEIGHT},
-    {BLOCK_X1, BLOCK_Y2, BLOCK_WIDTH, BLOCK_HEIGHT},
-    {BLOCK_X2, BLOCK_Y2, BLOCK_WIDTH, BLOCK_HEIGHT},
-};
-
-void Reader::image_filter_hough(Image *image) {
-    ImageKernelConvolutionFast(image, KERNEL_BOX_BLUR);  // Blur,
-    ImageKernelConvolutionFast(image, KERNEL_LAPLACE);   // then sharpen!
-    ImageThreshold(image, 90);                           // Filter for the darkest pixels
-    ImageNormalizedGradient(image);                      // Edge detection
-    ImageThreshold(image, 1);                            // Turns into a pure BW image
-}
-
 // TODO: There might be a better way of finding the reading rectangle;
 // grouping pixels and finding the one group closest to the corner, etc.
 // Also, maybe detecting 3 corners and finding the last one based on angles...
@@ -238,7 +227,7 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image) {
 
     int block_counter = 0;
     bool imprecise = false;  // mark if there was an imprecision finding the alignment corner
-    for (Rectangle block_rect : BLOCKS) {
+    for (Rectangle block_rect : reading_box.get_block_rectangles()) {
         Image block_img = ImageCopy(image);
         ImageCrop(&block_img, block_rect);
 

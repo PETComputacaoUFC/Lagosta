@@ -11,12 +11,14 @@ enum ReadMode : uint8_t {
     SAMPLE_CIRCLE,  // Averages a circle of radius read_radius around the item's center.
 };
 
-// TODO: Implement reading errors
 enum ReadWarning {
     BARCODE_NOT_FOUND,
     IMPRECISE_READING_RECTANGLE,
     TOO_MANY_EMPTY_CHOICES,
 };
+
+
+
 
 struct Item {
     char choice = '0';
@@ -26,21 +28,82 @@ struct Item {
 struct Reading {
     std::string answer_string = "";
     std::string barcode_string = "";
-    std::array<Vector2, 4> rectangle;    
+    std::array<Vector2, 4> rectangle;
     std::vector<ReadWarning> warnings;
-    std::vector<Item> items;  // questões
-    // TODO: Headers
+    std::vector<Item> items;    // questões
+    std::vector<Item> headers;  // cabeçalho
 };
 
-// TODO: ReadingBox with coordinates instead of hard-coded values (see reader.cpp)
-struct ReadingBox {};
+
+
+
+struct ItemGroup {
+    float item01a_x, item01a_y;
+    float item_spacing_x, item_spacing_y;
+    int num_items, num_choices;
+};
+
+struct ReadingBox {
+    std::vector<ItemGroup> item_groups;
+    std::vector<ItemGroup> header_groups;
+    float barcode_x, barcode_y;
+    float barcode_width, barcode_height;
+    int align_block_x1, align_block_x2;
+    int align_block_y1, align_block_y2;
+    int align_block_width, align_block_height;
+
+    // Retorna os retângulos dos blocos de alinhamento.
+    // ORDEM: top-left, top-right, bottom-left, bottom-right
+    inline constexpr std::array<Rectangle, 4> get_block_rectangles() {
+        float x1 = (float)align_block_x1, x2 = (float)align_block_x2;
+        float y1 = (float)align_block_y1, y2 = (float)align_block_y2;
+        float width = (float)align_block_width, height = (float)align_block_height;
+
+        return {Rectangle{x1, y1, width, height}, Rectangle{x2, y1, width, height},
+                Rectangle{x1, y2, width, height}, Rectangle{x2, y2, width, height}};
+    };
+};
+
+
+// clang-format off
+const ReadingBox OCI_MANUAL_READING_BOX = {
+    .item_groups={
+        // Itens 01 a 10
+        {.item01a_x=0.193147034f, .item01a_y=0.563997519f,
+            .item_spacing_x = 0.04735f, .item_spacing_y= 0.042f,
+            .num_items = 10, .num_choices = 5},
+        // Itens 11 a 20
+        {.item01a_x=0.475519632f, .item01a_y=0.563997519f,
+            .item_spacing_x = 0.04735f, .item_spacing_y= 0.042f,
+            .num_items = 10, .num_choices = 5}
+    },
+    .header_groups={
+        // Gabarito "Modalidade"
+        {.item01a_x = 0.7393448371f, .item01a_y = 0.566997519f,
+            .item_spacing_x = 0.04735f, .item_spacing_y= 0.042f,
+            .num_items = 1, .num_choices = 3}
+    },
+    .barcode_x = 0, .barcode_y = 0,
+    .barcode_width = 0, .barcode_height = 0,
+    .align_block_x1=0, .align_block_x2=1144,
+    .align_block_y1=0, .align_block_y2=774,
+    .align_block_width=120, .align_block_height=90
+};
+
+// TODO: ReadingBox pro leitor automático
+const ReadingBox OCI_AUTO_READING_BOX = {};
+// clang-format on
+
+
+
 
 struct Reader {
 private:
     std::vector<ReadWarning> warnings;
 
 public:
-    ReadMode read_mode;
+    ReadMode read_mode = SAMPLE_CIRCLE;
+    ReadingBox reading_box = OCI_MANUAL_READING_BOX;
 
     int read_radius = 7;           // radius around the center of the item the reader will scan
     float area_threshold = 0.5f;   // threshold that defines if a choice is considered as marked
