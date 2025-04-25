@@ -43,13 +43,15 @@ Reading Reader::read(Image image) {
     reading.reading_rectangle = reading_rectangle;
 
     /* ==== READING BARCODE ==== */
-    unsigned char *img_data = (unsigned char *)image.data;
-    ZXing::ImageView barcode_image_view(img_data, image.width, image.height,
-                                        ZXing::ImageFormat::Lum);
-    ZXing::ReaderOptions options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
-    ZXing::Barcode barcode = ZXing::ReadBarcode(barcode_image_view, options);
-    reading.barcode_string = barcode.text();
-    if (reading.barcode_string.empty()) { warnings.push_back(BARCODE_NOT_FOUND); }
+    if (reading_box.barcode_height != 0 && reading_box.barcode_width != 0) {
+        unsigned char *img_data = (unsigned char *)image.data;
+        ZXing::ImageView barcode_image_view(img_data, image.width, image.height,
+                                            ZXing::ImageFormat::Lum);
+        ZXing::ReaderOptions options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
+        ZXing::Barcode barcode = ZXing::ReadBarcode(barcode_image_view, options);
+        reading.barcode_string = barcode.text();
+        if (reading.barcode_string.empty()) { warnings.push_back(BARCODE_NOT_FOUND); }
+    }
 
     /* ==== READING ITEMS ==== */
     Image image_filtered1 = ImageCopy(image);
