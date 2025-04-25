@@ -64,7 +64,6 @@ Reading Reader::read(Image image) {
             read_item_group(ig, reading_rectangle, image_filtered1, image_filtered2);
         for (Item item : ig_items) {
             reading.items.push_back(item);
-            reading.answer_string.push_back(item.choice);
             null_counter += item.choice == '0' || item.choice == 'X';
             item_counter++;
         }
@@ -76,7 +75,6 @@ Reading Reader::read(Image image) {
             read_item_group(hg, reading_rectangle, image_filtered1, image_filtered2);
         for (Item item : hg_items) {
             reading.headers.push_back(item);
-            reading.answer_string.push_back(item.choice);
             null_counter += item.choice == '0' || item.choice == 'X';
             item_counter++;
         }

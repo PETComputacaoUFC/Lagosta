@@ -71,7 +71,7 @@ int main(void) {
 
             /* ==== LEITURA GABARITO ==== */
             reading = reader.read(img_gabarito);
-            printf("  > Gabarito: %s\n", reading.answer_string.c_str());
+            printf("  > Gabarito: %s\n", reading.get_answer_string().c_str());
             printf("  > Aztec: %s\n", reading.barcode_string.c_str());
             printf("  > Warnings: ");
             for (ReadWarning w : reading.warnings) { printf("%d, ", w); }

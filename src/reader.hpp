@@ -26,12 +26,16 @@ struct Item {
 };
 
 struct Reading {
-    std::string answer_string = "";
     std::string barcode_string = "";
     std::array<Vector2, 4> reading_rectangle;
     std::vector<ReadWarning> warnings;
     std::vector<Item> items;    // questões
     std::vector<Item> headers;  // cabeçalho
+    inline std::string get_answer_string() {
+        std::string answer_string;
+        for (Item item : items) { answer_string.push_back(item.choice); }
+        return answer_string;
+    };
 };
 
 
