@@ -8,5 +8,4 @@ CompileFlags:
         - "-Wextra"
         - "-Wno-missing-field-initializers"
         - "-Wshadow"
-        - "-Wpedantic"
         - "-std=c++20"

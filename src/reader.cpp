@@ -8,6 +8,9 @@
 
 const char ITEMS_STR[6] = "abcde";
 
+
+
+
 void Reader::image_filter1(Image *image) {
     ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     ImagePow(image, 1.5);
@@ -29,30 +32,39 @@ void Reader::image_filter_hough(Image *image) {
     ImageThreshold(image, 1);                            // Turns into a pure BW image
 }
 
+
+
+
 Reading Reader::read(Image image) {
+    // Assures the image is in grayscale format.
+    Image grayscale = image;
+    ImageFormat(&grayscale, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
+
     // we'll store warnings inside the reader's vector, then copie the
     // to the reading in the end.
     std::vector<ReadWarning> warnings;
     Reading reading{};
     reading.items.reserve(20);
 
-    std::array<Vector2, 4> reading_rectangle = get_reading_rectangle(image, &warnings);
+    std::array<Vector2, 4> reading_rectangle = get_reading_rectangle(grayscale, &warnings);
     reading.reading_rectangle = reading_rectangle;
-
     /* ==== READING BARCODE ==== */
     if (reading_box.barcode_height != 0 && reading_box.barcode_width != 0) {
-        unsigned char *img_data = (unsigned char *)image.data;
-        ZXing::ImageView barcode_image_view(img_data, image.width, image.height,
-                                            ZXing::ImageFormat::Lum);
-        ZXing::ReaderOptions options =
-            ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Aztec);
+        // this reads the image so fast we don't even need to crop it lol
+        ZXing::ImageView barcode_image_view((uint8_t *)grayscale.data, grayscale.width,
+                                            grayscale.height, ZXing::ImageFormat::Lum);
+        ZXing::ReaderOptions options = ZXing::ReaderOptions()
+                                           .setFormats(ZXing::BarcodeFormat::Aztec)
+                                           .setTryInvert(false)
+                                           .setTryRotate(false)
+                                           .setBinarizer(ZXing::Binarizer::FixedThreshold);
         ZXing::Barcode barcode = ZXing::ReadBarcode(barcode_image_view, options);
         reading.barcode_string = barcode.text();
         if (reading.barcode_string.empty()) { warnings.push_back(BARCODE_NOT_FOUND); }
     }
 
     /* ==== READING ITEMS ==== */
-    Image image_filtered1 = ImageCopy(image);
+    Image image_filtered1 = ImageCopy(grayscale);
     image_filter1(&image_filtered1);
     Image image_filtered2 = ImageCopy(image_filtered1);
     image_filter2(&image_filtered2);
@@ -91,11 +103,8 @@ Reading Reader::read(Image image) {
     return reading;
 }
 
-// Retorna o valor do pixel entre 0 e 1
-float Reader::read_pixel(Image image, int x, int y) {
-    int offset = x + image.width * y;
-    return ((float)((uint8_t *)image.data)[offset]) / 255.0f;
-}
+
+
 
 // Retorna porcentagem dos pixels de uma área que estão acima do threshold
 float Reader::read_area(Image image, int x, int y) {
@@ -111,13 +120,14 @@ float Reader::read_area(Image image, int x, int y) {
             }
 
             read_count += 1.0f;
-            float pixel = read_pixel(image, read_coords.x, read_coords.y);
+            float pixel = GetPixelFSafe(image, read_coords.x, read_coords.y);
             if (pixel >= pixel_threshold) { reading += pixel; }
         }
     }
 
     return reading / read_count;
 }
+
 
 std::vector<Item> Reader::read_item_group(ItemGroup item_group,
                                           std::array<Vector2, 4> reading_rectangle,
@@ -164,36 +174,8 @@ std::vector<Item> Reader::read_item_group(ItemGroup item_group,
     return items;
 }
 
-#define ORANGE_T CLITERAL(Color){255, 161, 0, 128}    // Orange
-#define PURPLE_T CLITERAL(Color){200, 122, 255, 128}  // Purple
-// Desenha o output de uma leitura na tela
-void Reader::draw_reading(Reading reading) {
-    std::array<Vector2, 4> reading_rectangle = reading.reading_rectangle;
-    for (Vector2 corner : reading_rectangle) { DrawCircleV(corner, 5.0f, RED); }
 
-    int item_counter = 0;
-    for (ItemGroup ig : reading_box.item_groups) {
-        for (int i = 0; i < ig.num_items; i++) {
-            Item item = {-1, std::vector<float>(ig.num_choices)};
 
-            float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
-            for (int c = 0; c < ig.num_choices; c++) {
-                float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
-                Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
-                Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
-
-                Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-                char text[6];
-                sprintf(text, "%.2f", reading.items[item_counter].choice_readings[c]);
-                DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
-                DrawCircleV(
-                    center, read_radius,
-                    reading.items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
-            }
-            item_counter++;
-        }
-    }
-}
 
 const Range THETA_RANGE_H = {-10.0f, 10.0f, 1.0f};
 const Range THETA_RANGE_V1 = {-90.0f, -80.0f, 1.0f};
@@ -233,9 +215,9 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
         Line line_h = max_h;
         Line line_v = max_v1.count > max_v2.count ? max_v1 : max_v2;
 
-        // our threshold for imprecision is 5 countings or less.
-        if (line_h.count <= 5 || line_v.count <= 5) { imprecise = true; }
-        printf("%d > line_h: %d | line_v: %d\n", block_counter, line_h.count, line_v.count);
+        // our threshold for imprecision is 6 countings or less.
+        if (line_h.count <= 6 || line_v.count <= 6) { imprecise = true; }
+        // printf("%d > line_h: %d | line_v: %d\n", block_counter, line_h.count, line_v.count);
 
         Vector2 intersection = IntersectionPoint(line_h, line_v);
         intersection.x += block_rect.x;
@@ -249,4 +231,62 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
     if (imprecise && warnings != nullptr) { warnings->push_back(IMPRECISE_READING_RECTANGLE); }
 
     return rectangle;
+}
+
+
+
+
+const Color ORANGE_T{255, 161, 0, 128};    // Orange with transparency
+const Color PURPLE_T{200, 122, 255, 128};  // Purple with transparency
+const Color RED_T{230, 41, 55, 196};       // Red with transparency
+// Desenha o output de uma leitura na tela
+void Reader::draw_reading(Reading reading) {
+    std::array<Vector2, 4> reading_rectangle = reading.reading_rectangle;
+    for (Vector2 corner : reading_rectangle) { DrawCircleV(corner, 5.0f, RED_T); }
+
+    int item_counter = 0;
+    for (ItemGroup ig : reading_box.item_groups) {
+        for (int i = 0; i < ig.num_items; i++) {
+            Item item = {-1, std::vector<float>(ig.num_choices)};
+
+            float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
+            for (int c = 0; c < ig.num_choices; c++) {
+                float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
+                Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
+                Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
+
+                Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+                char text[6];
+                sprintf(text, "%.2f", reading.items[item_counter].choice_readings[c]);
+                DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
+                DrawCircleV(
+                    center, read_radius,
+                    reading.items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
+            }
+            item_counter++;
+        }
+    }
+
+    item_counter = 0;
+    for (ItemGroup hg : reading_box.header_groups) {
+        for (int i = 0; i < hg.num_items; i++) {
+            Item item = {-1, std::vector<float>(hg.num_choices)};
+
+            float y_lerp_amount = hg.item01a_y + hg.item_spacing_y * (float)i;
+            for (int c = 0; c < hg.num_choices; c++) {
+                float x_lerp_amount = hg.item01a_x + hg.item_spacing_x * (float)c;
+                Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
+                Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
+
+                Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
+                char text[6];
+                sprintf(text, "%.2f", reading.headers[item_counter].choice_readings[c]);
+                DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
+                DrawCircleV(
+                    center, read_radius,
+                    reading.headers[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
+            }
+            item_counter++;
+        }
+    }
 }
