@@ -6,16 +6,19 @@ LDFLAGS := -Llib -lraylib -lZXing
 OS_LDFLAGS := -lGL -lm -lpthread -ldl -lrt -lX11 -lsane
 
 SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp \
-		   ./src/imgtools/imgtools.cpp ./src/scanner.cpp ./src/rlImGui.cpp \
-		   ./src/ui/ui.cpp \
-		   ./src/imgui/imgui.cpp ./src/imgui/imgui_draw.cpp ./src/imgui/imgui_tables.cpp \
-		   ./src/imgui/imgui_widgets.cpp ./src/imgui/imgui_demo.cpp
-OBJECTS := $(patsubst ./src/%.cpp, ./build/%.o, $(SOURCES))
-OUTPUT := ./build/lagosta
-BUILD_DIRS := $(sort $(dir $(OBJECTS)))
+		   ./src/imgtools/imgtools.cpp ./src/scanner.cpp ./src/gui/gui.cpp
+DEPS_SOURCES := ./deps/imgui/imgui.cpp ./deps/imgui/imgui_draw.cpp \
+		   ./deps/imgui/imgui_tables.cpp ./deps/imgui/imgui_widgets.cpp \
+		   ./deps/imgui/imgui_demo.cpp ./deps/rlImGui.cpp
+
+OBJECTS := $(patsubst ./src/%.cpp, ./build/src/%.o, $(SOURCES))
+DEPS_OBJECTS := $(patsubst ./deps/%.cpp, ./build/deps/%.o, $(DEPS_SOURCES))
+
+OUTPUT := ./build/lagosta/lagosta
+BUILD_DIRS := $(sort $(dir $(OBJECTS))) $(sort $(dir $(DEPS_OBJECTS))) $(dir $(OUTPUT))
 
 CREATE_DIR = mkdir -p $(BUILD_DIRS)
-CLEAN = rm -rf $(OBJECTS) $(OUTPUT)
+CLEAN = rm -rf $(OBJECTS) $(OUTPUT) ./build/lagosta
 
 ############### WINDOWS FLAGS ###############
 ifeq ($(OS),Windows_NT)
@@ -47,18 +50,22 @@ LDFLAGS += $(OS_LDFLAGS)
 .PHONY = all dir run clean
 
 all: $(OUTPUT)
+	cp -r ./resources ./build/lagosta
 
 dir:
 	@$(CREATE_DIR)
 
 run: all
-	@./$(OUTPUT)
+	@cd $(dir $(OUTPUT)) && ./$(notdir $(OUTPUT))
 
 clean:
 	@$(CLEAN)
 
-$(OUTPUT): dir | $(OBJECTS)
-	$(CXX) $(OBJECTS) $(CXXFLAGS) $(LDFLAGS) -o $(OUTPUT)
+$(OUTPUT): dir | $(OBJECTS) $(DEPS_OBJECTS)
+	$(CXX) $(OBJECTS) $(DEPS_OBJECTS) $(CXXFLAGS) $(LDFLAGS) -o $(OUTPUT)
 
-./build/%.o: ./src/%.cpp
+./build/src/%.o: ./src/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+./build/deps/%.o: ./deps/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

@@ -6,7 +6,7 @@
 #include "raylib.h"
 #include "reader.hpp"
 #include "rlImGui.h"
-#include "ui/ui.hpp"
+#include "gui/gui.hpp"
 
 bool ImGuiDemoOpen = true;
 
