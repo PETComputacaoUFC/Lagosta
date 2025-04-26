@@ -8,9 +8,6 @@
 
 const char ITEMS_STR[6] = "abcde";
 
-
-
-
 void Reader::image_filter1(Image *image) {
     ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     ImagePow(image, 1.5);
@@ -86,7 +83,7 @@ Reading Reader::read(Image image) {
         std::vector<Item> hg_items =
             read_item_group(hg, reading_rectangle, image_filtered1, image_filtered2);
         for (Item item : hg_items) {
-            reading.headers.push_back(item);
+            reading.header_items.push_back(item);
             null_counter += item.choice == '-' || item.choice == 'X';
             item_counter++;
         }
@@ -281,11 +278,11 @@ void Reader::draw_reading(Reading reading) {
 
                 Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
                 char text[6];
-                sprintf(text, "%.2f", reading.headers[item_counter].choice_readings[c]);
+                sprintf(text, "%.2f", reading.header_items[item_counter].choice_readings[c]);
                 DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
                 DrawCircleV(
                     center, read_radius,
-                    reading.headers[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
+                    reading.header_items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
             }
             item_counter++;
         }

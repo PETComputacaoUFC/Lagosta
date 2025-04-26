@@ -17,25 +17,29 @@ enum ReadWarning {
     TOO_MANY_NULL_CHOICES,
 };
 
-
-
-
 struct Item {
     char choice = '-';
     std::vector<float> choice_readings;
 };
 
+#define HEADER_CONTENT_MAX_CHARS 101
+struct Header {
+    std::string field_name;
+    std::string content;
+};
+
 struct Reading {
+    std::vector<Header> headers;
     std::string barcode_string = "";
     std::array<Vector2, 4> reading_rectangle;
     std::vector<ReadWarning> warnings;
-    std::vector<Item> items;    // questões
-    std::vector<Item> headers;  // cabeçalho
+    std::vector<Item> items;         // questões
+    std::vector<Item> header_items;  // itens do cabeçalho
     inline std::string get_answer_string() {
         std::string answer_string;
         for (Item item : items) { answer_string.push_back(item.choice); }
         answer_string.push_back('|');
-        for (Item header : headers) { answer_string.push_back(header.choice); }
+        for (Item header : header_items) { answer_string.push_back(header.choice); }
         return answer_string;
     };
 };

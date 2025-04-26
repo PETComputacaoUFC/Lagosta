@@ -19,6 +19,8 @@ AlignTrailingComments:
   Kind: Always
   OverEmptyLines: 1
 
+IndentCaseLabels: false
+
 AlignConsecutiveShortCaseStatements:
   Enabled: true
   AcrossEmptyLines: false

@@ -38,7 +38,7 @@ struct Kernel {
 };
 
 // clang-format off
-const Kernel KERNEL_BOX_BLUR = Kernel{1, 9}.normalized();
+const Kernel KERNEL_BOX_BLUR = Kernel(1, 9).normalized();
 const Kernel KERNEL_LAPLACE = Kernel{
     {
          0, -1,  0,
