@@ -264,39 +264,6 @@ static void SetupMouseCursors(void)
     MouseCursorMap[ImGuiMouseCursor_NotAllowed] = MOUSE_CURSOR_NOT_ALLOWED;
 }
 
-void SetupFontAwesome(void)
-{
-#ifndef NO_FONT_AWESOME
-    static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-    ImFontConfig icons_config;
-    icons_config.MergeMode = true;
-    icons_config.PixelSnapH = true;
-    icons_config.FontDataOwnedByAtlas = false;
-
-    icons_config.GlyphMaxAdvanceX = std::numeric_limits<float>::max();
-    icons_config.RasterizerMultiply = 1.0f;
-    icons_config.OversampleH = 2;
-    icons_config.OversampleV = 1;
-
-    icons_config.GlyphRanges = icons_ranges;
-
-    ImGuiIO& io = ImGui::GetIO();
-
-    float size = FONT_AWESOME_ICON_SIZE;
-#if !defined(__APPLE__)
-    if (!IsWindowState(FLAG_WINDOW_HIGHDPI)) {
-        size *= GetWindowScaleDPI().y;
-    }
-
-
-	icons_config.RasterizerMultiply = GetWindowScaleDPI().y;
-#endif
-
-    io.Fonts->AddFontFromMemoryCompressedTTF((void*)fa_solid_900_compressed_data, fa_solid_900_compressed_size, size, &icons_config, icons_ranges);
-#endif
-
-}
-
 void SetupBackend(void)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -322,8 +289,6 @@ void SetupBackend(void)
 void rlImGuiEndInitImGui(void)
 {
     ImGui::SetCurrentContext(GlobalContext);
-
-    SetupFontAwesome();
 
     SetupMouseCursors();
 

@@ -76,7 +76,7 @@ Reading Reader::read(Image image) {
             read_item_group(ig, reading_rectangle, image_filtered1, image_filtered2);
         for (Item item : ig_items) {
             reading.items.push_back(item);
-            null_counter += item.choice == '0' || item.choice == 'X';
+            null_counter += item.choice == '-' || item.choice == 'X';
             item_counter++;
         }
     }
@@ -87,7 +87,7 @@ Reading Reader::read(Image image) {
             read_item_group(hg, reading_rectangle, image_filtered1, image_filtered2);
         for (Item item : hg_items) {
             reading.headers.push_back(item);
-            null_counter += item.choice == '0' || item.choice == 'X';
+            null_counter += item.choice == '-' || item.choice == 'X';
             item_counter++;
         }
     }
@@ -149,7 +149,7 @@ std::vector<Item> Reader::read_item_group(ItemGroup item_group,
             item.choice_readings[c] = Lerp(reading1, reading2, choice_lerp_t);
         }
 
-        char choice_id = '0';
+        char choice_id = '-';
         float choice_value = -1.0f;
         float second_highest = -1.0f;
 

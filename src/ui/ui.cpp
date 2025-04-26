@@ -18,10 +18,10 @@ void UpdateStyle() {
 
     style.WindowRounding = 0;
     style.ChildRounding = 0;
-    style.FrameRounding = 12;
+    style.FrameRounding = 32;
     style.PopupRounding = 0;
-    style.ScrollbarRounding = 12;
-    style.GrabRounding = 12;
+    style.ScrollbarRounding = 32;
+    style.GrabRounding = 32;
 
     style.TabBorderSize = 1;
     style.TabBarBorderSize = 0;
@@ -63,7 +63,7 @@ void UpdateStyle() {
     colors[ImGuiCol_ResizeGrip] = ImVec4(0.35f, 0.35f, 0.35f, 0.17f);
     colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.12f, 0.40f, 0.96f, 0.67f);
     colors[ImGuiCol_ResizeGripActive] = ImVec4(0.12f, 0.40f, 0.96f, 0.95f);
-    colors[ImGuiCol_InputTextCursor] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_InputTextCursor] = ImVec4(0.79f, 0.83f, 0.96f, 1.00f);
     colors[ImGuiCol_TabHovered] = ImVec4(0.09f, 0.10f, 0.15f, 1.00f);
     colors[ImGuiCol_Tab] = ImVec4(0.29f, 0.30f, 0.39f, 1.00f);
     colors[ImGuiCol_TabSelected] = ImVec4(0.14f, 0.15f, 0.23f, 1.00f);

@@ -21,7 +21,7 @@ enum ReadWarning {
 
 
 struct Item {
-    char choice = '0';
+    char choice = '-';
     std::vector<float> choice_readings;
 };
 

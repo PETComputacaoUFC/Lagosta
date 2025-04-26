@@ -54,6 +54,7 @@
 #define RLIMGUIAPI       // Functions defined as 'extern' by default (implicit specifiers)
 #endif
 
+#define NO_FONT_AWESOME
 #ifndef NO_FONT_AWESOME
 #include "extras/IconsFontAwesome6.h"
 #ifndef FONT_AWESOME_ICON_SIZE
