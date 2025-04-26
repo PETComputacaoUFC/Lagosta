@@ -1,78 +1,96 @@
-#define CLAY_IMPLEMENTATION
-#include "clay.h"
-#include "clay_renderer_raylib.c"
+#include <cstdio>
+
+#include "imgui.h"
 #include "raylib.h"
+#include "rlImGui.h"
+#include "ui/ui.hpp"
 
-void clay_error_handler(Clay_ErrorData errorData) { printf("%s", errorData.errorText.chars); }
+bool ImGuiDemoOpen = true;
 
-// Your project's main entry
-int main(void) {
+int main() {
     SetTraceLogLevel(LOG_WARNING);
+    int screenWidth = 1280;
+    int screenHeight = 720;
+    // do not set the FLAG_WINDOW_HIGHDPI flag, that scales a low res framebuffer up to the native
+    // resolution. use the native resolution and scale your geometry.
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE );
+    InitWindow(screenWidth, screenHeight, "Lagosta");
+    SetTargetFPS(144);
 
-    Font fonts[1];
-    // ClayMan clayMan(1024, 786, Raylib_MeasureText, fonts);
+    rlImGuiSetup(true);
+    ImGuiIO &imGuiIO = ImGui::GetIO();
+    imGuiIO.IniFilename = nullptr;
+    // imGuiIO.LogFilename = nullptr;
+    SetExitKey(KEY_NULL);
+    UpdateStyle();
 
-    uint64_t clayRequiredMemory = Clay_MinMemorySize();
-    Clay_Arena clayMemory =
-        Clay_CreateArenaWithCapacityAndMemory(clayRequiredMemory, malloc(clayRequiredMemory));
-    Clay_Initialize(clayMemory, {1024, 786}, (Clay_ErrorHandler)clay_error_handler);
-    Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
-
-    Clay_Raylib_Initialize(
-        1024, 786, "Lagosta",
-        FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT);
-    // Load fonts after initializing raylib
-    fonts[0] = LoadFontEx("resources/fonts/NunitoSans-Regular.ttf", 48, 0, 400);
-    SetTextureFilter(fonts[0].texture, TEXTURE_FILTER_BILINEAR);
-
-
-
-
-    // Raylib render loop
+    bool layout_init = false;
     while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_D)) { Clay_SetDebugModeEnabled(!Clay_IsDebugModeEnabled()); }
+        IsKeyPressed(KEY_ESCAPE);
 
-        // Raylib mouse position and scroll vectors
-        Vector2 mousePosition = GetMousePosition();
-        Vector2 scrollDelta = GetMouseWheelMoveV();
-        Clay_SetLayoutDimensions({(float)GetScreenWidth(), (float)GetScreenHeight()});
-        Clay_SetPointerState({mousePosition.x, mousePosition.y}, IsMouseButtonDown(0));
-        Clay_UpdateScrollContainers(true, {scrollDelta.x, scrollDelta.y}, GetFrameTime());
+        BeginDrawing();
+        ClearBackground(DARKGRAY);
+        rlImGuiBegin();
 
-        // Prep for layout
-        Clay_BeginLayout();
+        ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::Begin("root", nullptr,
+                     ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar
+                         | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize
+                         | ImGuiWindowFlags_NoMove);
 
-        // Example full-window parent container
-        CLAY({// Configure element
-              .id = CLAY_ID("Root"),
-              .layout =
-                  {
-                      .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                      .padding = CLAY_PADDING_ALL(16),
-                      .childGap = 16,
-                      .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                  },
-              .backgroundColor = {50, 50, 50, 255},
-              .border = {
-                  .color = {50, 50, 180, 255},
-                  .width = {1, 1, 1, 1},
-              }}) {  // Child elements in here
-            CLAY_TEXT(CLAY_STRING("Hello World"),
-                      CLAY_TEXT_CONFIG({.textColor = {255, 255, 255, 255}, .fontSize = 24}));
-            CLAY_TEXT(CLAY_STRING("Hello World 2"),
-                      CLAY_TEXT_CONFIG({.textColor = {255, 255, 255, 255}, .fontSize = 24}));
+        // Create a tab bar
+        if (ImGui::BeginMenuBar()) {
+            if (ImGui::BeginTabBar("MainTabBar")) {
+                if (ImGui::BeginTabItem("Leitor")) { ImGui::EndTabItem(); }
+                if (ImGui::BeginTabItem("Scanner")) { ImGui::EndTabItem(); }
+                ImGui::EndTabBar();
+            }
+            ImGui::EndMenuBar();
         }
-        // );
 
-        // Pass your layout to the manager to get the render commands
-        Clay_RenderCommandArray renderCommands = Clay_EndLayout();
+        ImGui::Columns(2, "MainCols");
+        if (!layout_init) {
+            ImGui::SetColumnWidth(0, 200.0f);
+            layout_init = true;
+        }
 
-        BeginDrawing();                             // Start Raylib's draw block
-        ClearBackground(BLACK);                     // Raylib's clear function
-        Clay_Raylib_Render(renderCommands, fonts);  // Render Clay Layout
-        EndDrawing();                               // End Raylib's draw block
+        ImGui::BeginChild("SidePanel");
+        ImGui::Text("This is the side panel!");
+        ImGui::EndChild();
+
+        ImGui::NextColumn();
+
+        ImGui::BeginChild("Leitor");
+            ImGui::Columns(2, "LeitorCols");
+            ImGui::BeginChild("ReaderLeftPanel");
+            ImGui::Text("This is the reader left panel!");
+            ImGui::Button("Button1");
+            ImGui::EndChild();
+
+            ImGui::NextColumn();
+
+            ImGui::BeginChild("ReaderRightPanel");
+                ImGui::BeginChild("ReaderTopRightPanel", {0,320}, ImGuiChildFlags_ResizeY);
+                ImGui::Text("This is the reader top-right panel!");
+                ImGui::Button("Button2");
+                ImGui::EndChild();
+
+                ImGui::Separator();
+
+                ImGui::BeginChild("ReaderBottomRightPanel", {0,0}, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysAutoResize);
+                ImGui::Text("This is the reader bottom-right panel!");
+                ImGui::Button("Button2");
+                ImGui::EndChild();
+            ImGui::EndChild();
+        ImGui::EndChild();
+
+        ImGui::End();
+        rlImGuiEnd();
+        EndDrawing();
     }
-    
-    UnloadFont(fonts[0]);
+
+    rlImGuiShutdown();
+    CloseWindow();
     return 0;
 }

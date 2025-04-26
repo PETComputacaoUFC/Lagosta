@@ -13,6 +13,8 @@ AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortCaseExpressionOnASingleLine: true
 
+# AlignArrayOfStructures: Right
+
 AlignTrailingComments:
   Kind: Always
   OverEmptyLines: 1
