@@ -28,8 +28,21 @@ struct Header {
     std::string content;
 };
 
+constexpr std::string caralho() {
+    std::string c = "";
+    c.resize(101);
+    return c;
+}
+
 struct Reading {
-    std::vector<Header> headers;
+    std::vector<Header> headers = {
+        {"Nome", caralho()},
+        {"Escola", caralho()},
+        {"Modalidade", caralho()},
+        {"Fase", caralho()},
+        {"Data", caralho()},
+        {"Inscrição", caralho()},
+    };
     std::string barcode_string = "";
     std::array<Vector2, 4> reading_rectangle;
     std::vector<ReadWarning> warnings;

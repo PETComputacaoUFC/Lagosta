@@ -2,3 +2,5 @@ seria bom se calculasse a nota e o número de questões fáceis/médias/difícei
 pq é critério desempate
 aí ano passado tava eu lá olhando um por um dos empatados
 (tem peso as questões)
+
+TODO: Destructor dos headers e fsentry etc

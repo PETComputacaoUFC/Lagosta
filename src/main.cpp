@@ -1,4 +1,5 @@
 #include "gui/gui.hpp"
+#include "imgui.h"
 #include "raylib.h"
 #include "rlImGui.h"
 
@@ -14,15 +15,18 @@ int main() {
     SetExitKey(KEY_NULL);
 
     rlImGuiSetup(true);
-    UpdateStyle();
 
-    UserInterface ui;
+    UserInterface ui{};
 
     while (!WindowShouldClose()) {
         BeginDrawing();
+        rlImGuiBegin();
 
         ui.draw();
+        // ImGui::ShowDemoWindow();
+        // ImGui::SetWindowFocus("Dear ImGui Demo");
 
+        rlImGuiEnd();
         EndDrawing();
     }
 
