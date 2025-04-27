@@ -7,7 +7,7 @@ const float SCANNER_HEIGHT = 24969216.0f;
 const float SCANNER_WIDTH = 14149222.0f;
 const float SCANNER_RATIO = SCANNER_HEIGHT / SCANNER_WIDTH;
 const float A4_RATIO = std::sqrt(2.0f);
-const char *VALUE_TYPES_STR[6]{"SANE_TYPE_BOOL",   "SANE_TYPE_INT",    "SANE_TYPE_FIXED",
+const char* VALUE_TYPES_STR[6]{"SANE_TYPE_BOOL",   "SANE_TYPE_INT",    "SANE_TYPE_FIXED",
                                "SANE_TYPE_STRING", "SANE_TYPE_BUTTON", "SANE_TYPE_GROUP"};
 
 void PrintDeviceOpts(SANE_Handle handle) {
@@ -16,7 +16,7 @@ void PrintDeviceOpts(SANE_Handle handle) {
     printf("Found %d options:\n", num_opts);
 
     for (int opt = 1; opt < num_opts; opt++) {
-        const SANE_Option_Descriptor *opt_descriptor = sane_get_option_descriptor(handle, opt);
+        const SANE_Option_Descriptor* opt_descriptor = sane_get_option_descriptor(handle, opt);
         if (opt_descriptor->type == 5) {
             printf("Group: %s\n", opt_descriptor->title);
             continue;
@@ -29,20 +29,20 @@ void PrintDeviceOpts(SANE_Handle handle) {
         switch (opt_descriptor->type) {
             case SANE_TYPE_BOOL: {
                 bool v;
-                sane_control_option(handle, opt, SANE_ACTION_GET_VALUE, (void *)&v, NULL);
+                sane_control_option(handle, opt, SANE_ACTION_GET_VALUE, (void* )&v, NULL);
                 printf("\t     value: %s", v ? "true" : "false\n");
                 break;
             }
             case SANE_TYPE_FIXED:  // same as int
             case SANE_TYPE_INT: {
                 int v;
-                sane_control_option(handle, opt, SANE_ACTION_GET_VALUE, (void *)&v, NULL);
+                sane_control_option(handle, opt, SANE_ACTION_GET_VALUE, (void* )&v, NULL);
                 printf("\t     value: %d\n", v);
                 break;
             }
             case SANE_TYPE_STRING: {
-                char *v = (char *)malloc(1);  // SILENCE THE WARNINGS AAAA
-                sane_control_option(handle, opt, SANE_ACTION_GET_VALUE, (void *)v, NULL);
+                char* v = (char* )malloc(1);  // SILENCE THE WARNINGS AAAA
+                sane_control_option(handle, opt, SANE_ACTION_GET_VALUE, (void* )v, NULL);
                 printf("\t     value: %s\n", v);
                 break;
             }
@@ -56,8 +56,8 @@ void PrintDeviceOpts(SANE_Handle handle) {
 std::vector<std::string> GetScannerNames() {
     std::vector<std::string> scanners{};
 
-    SANE_Device **devices;
-    sane_get_devices((const SANE_Device ***)&devices, true);
+    SANE_Device* *devices;
+    sane_get_devices((const SANE_Device* **)&devices, true);
 
     while ((*devices) != NULL) {
         scanners.push_back((*devices)->name);
@@ -86,13 +86,13 @@ SANE_Handle GetScanner(std::string name_pattern) {
 }
 
 // Returns a pointer to data read from a scanner
-unsigned char *ReadScannerData(SANE_Handle handle) {
+unsigned char* ReadScannerData(SANE_Handle handle) {
     SANE_Parameters parameters;
     sane_get_parameters(handle, &parameters);
 
-    int bytes = parameters.lines * parameters.bytes_per_line;
-    uint8_t *pixels = (uint8_t *)malloc(bytes);
-    uint8_t *img_start = pixels;
+    int bytes = parameters.lines*  parameters.bytes_per_line;
+    uint8_t* pixels = (uint8_t* )malloc(bytes);
+    uint8_t* img_start = pixels;
     for (int p = 0; p < bytes; p++) { pixels[p] = 255; }
 
     int read_length;
@@ -113,10 +113,10 @@ unsigned char *ReadScannerData(SANE_Handle handle) {
 // Reads data from a scanner and converts it into a raylib image
 Image ImageFromScanner(SANE_Handle device_handle) {
     // sets SCAN MODE option to monochrome
-    sane_control_option(device_handle, 2, SANE_ACTION_SET_VALUE, (void *)"Gray", NULL);
+    sane_control_option(device_handle, 2, SANE_ACTION_SET_VALUE, (void* )"Gray", NULL);
     // sets SCAN RESOLUTION option to 150dpi
     const int SCAN_DPI = 150;
-    sane_control_option(device_handle, 3, SANE_ACTION_SET_VALUE, (void *)&SCAN_DPI, NULL);
+    sane_control_option(device_handle, 3, SANE_ACTION_SET_VALUE, (void* )&SCAN_DPI, NULL);
 
     // Starts scanning
     SANE_Status status = sane_start(device_handle);
@@ -132,7 +132,7 @@ Image ImageFromScanner(SANE_Handle device_handle) {
     int height = (int)((float)p.lines / (SCANNER_RATIO / A4_RATIO));
 
     // Reads data from the scanner
-    uint8_t *img_start = ReadScannerData(device_handle);
+    uint8_t* img_start = ReadScannerData(device_handle);
     if (img_start == nullptr) {
         sane_close(device_handle);
         return Image{};

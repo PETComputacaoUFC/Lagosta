@@ -8,20 +8,20 @@
 
 const char ITEMS_STR[6] = "abcde";
 
-void Reader::image_filter1(Image *image) {
+void Reader::image_filter1(Image* image) {
     ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
     ImagePow(image, 1.5);
     ImageColorInvertFast(image);
 }
 
-void Reader::image_filter2(Image *image) {
+void Reader::image_filter2(Image* image) {
     ImageThreshold(image, 60);
     ImageErode(image, filter2_kernel_radius);
     ImageDilate(image, filter2_kernel_radius);
 }
 
 // Pre-processing filter for applying the hough transform
-void Reader::image_filter_hough(Image *image) {
+void Reader::image_filter_hough(Image* image) {
     ImageKernelConvolutionFast(image, KERNEL_BOX_BLUR);  // Blur,
     ImageKernelConvolutionFast(image, KERNEL_LAPLACE);   // then sharpen!
     ImageThreshold(image, 90);                           // Filter for the darkest pixels
@@ -48,7 +48,7 @@ Reading Reader::read(Image image) {
     /* ==== READING BARCODE ==== */
     if (reading_box.barcode_height != 0 && reading_box.barcode_width != 0) {
         // this reads the image so fast we don't even need to crop it lol
-        ZXing::ImageView barcode_image_view((uint8_t *)grayscale.data, grayscale.width,
+        ZXing::ImageView barcode_image_view((uint8_t*)grayscale.data, grayscale.width,
                                             grayscale.height, ZXing::ImageFormat::Lum);
         ZXing::ReaderOptions options = ZXing::ReaderOptions()
                                            .setFormats(ZXing::BarcodeFormat::Aztec)
@@ -184,7 +184,7 @@ const float HOUGH_THRESHOLD = 0.5f;
 // grouping pixels and finding the one group closest to the corner, etc.
 // Also, maybe detecting 3 corners and finding the last one based on angles...
 std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
-                                                     std::vector<ReadWarning> *warnings) {
+                                                     std::vector<ReadWarning>* warnings) {
     std::array<Vector2, 4> rectangle{};
 
     int block_counter = 0;
@@ -280,9 +280,9 @@ void Reader::draw_reading(Reading reading) {
                 char text[6];
                 sprintf(text, "%.2f", reading.header_items[item_counter].choice_readings[c]);
                 DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
-                DrawCircleV(
-                    center, read_radius,
-                    reading.header_items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
+                DrawCircleV(center, read_radius,
+                            reading.header_items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T
+                                                                                      : PURPLE_T);
             }
             item_counter++;
         }

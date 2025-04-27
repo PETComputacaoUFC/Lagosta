@@ -6,10 +6,11 @@ LDFLAGS := -Llib -lraylib -lZXing
 OS_LDFLAGS := -lGL -lm -lpthread -ldl -lrt -lX11 -lsane
 
 SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp \
-		   ./src/imgtools/imgtools.cpp ./src/scanner.cpp ./src/gui/gui.cpp
+		   ./src/imgtools/imgtools.cpp ./src/scanner.cpp ./src/gui/gui.cpp \
+		   ./src/gui/draw.cpp ./src/gui/widgets.cpp
 DEPS_SOURCES := ./deps/imgui/imgui.cpp ./deps/imgui/imgui_draw.cpp \
 		   ./deps/imgui/imgui_tables.cpp ./deps/imgui/imgui_widgets.cpp \
-		   ./deps/imgui/imgui_demo.cpp ./deps/rlImGui.cpp
+		   ./deps/imgui/imgui_demo.cpp ./deps/rlImGui.cpp ./deps/ImGuiFileDialog/ImGuiFileDialog.cpp
 
 OBJECTS := $(patsubst ./src/%.cpp, ./build/src/%.o, $(SOURCES))
 DEPS_OBJECTS := $(patsubst ./deps/%.cpp, ./build/deps/%.o, $(DEPS_SOURCES))
@@ -68,4 +69,4 @@ $(OUTPUT): dir | $(OBJECTS) $(DEPS_OBJECTS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 ./build/deps/%.o: ./deps/%.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -w -c $< -o $@

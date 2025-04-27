@@ -9,10 +9,10 @@
 
 
 // O valor de cada pixel se torna o MAIOR valor dos pixels em sua vizinhança
-void ImageDilate(Image *image, int kernel_radius) {
+void ImageDilate(Image* image, int kernel_radius) {
     size_t img_memsize = image->width * image->height;
-    uint8_t *image_data = (uint8_t *)image->data;
-    uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
+    uint8_t* image_data = (uint8_t*)image->data;
+    uint8_t* image_copy = (uint8_t*)malloc(img_memsize);
     memcpy(image_copy, image_data, img_memsize);
 
     auto lambda = [image, image_copy, kernel_radius](int start_row, int end_row) {
@@ -50,10 +50,10 @@ void ImageDilate(Image *image, int kernel_radius) {
 }
 
 // O valor de cada pixel se torna o MENOR valor dos pixels em sua vizinhança
-void ImageErode(Image *image, int kernel_radius) {
+void ImageErode(Image* image, int kernel_radius) {
     size_t img_memsize = image->width * image->height;
-    uint8_t *image_data = (uint8_t *)image->data;
-    uint8_t *image_copy = (uint8_t *)malloc(img_memsize);
+    uint8_t* image_data = (uint8_t*)image->data;
+    uint8_t* image_copy = (uint8_t*)malloc(img_memsize);
     memcpy(image_copy, image_data, img_memsize);
 
     auto lambda = [image, image_copy, kernel_radius](int start_row, int end_row) {
@@ -91,8 +91,8 @@ void ImageErode(Image *image, int kernel_radius) {
 }
 
 // Colore preto cada pixel abaixo do threshold, e branco cada pixel igual ou acima.
-void ImageThreshold(Image *image, uint8_t threshold) {
-    uint8_t *image_data = (uint8_t *)image->data;
+void ImageThreshold(Image* image, uint8_t threshold) {
+    uint8_t* image_data = (uint8_t*)image->data;
 
     auto lambda = [image_data, threshold](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {
@@ -113,8 +113,8 @@ void ImageThreshold(Image *image, uint8_t threshold) {
 }
 
 // Trata cada pixel de uma imagem como um número entre 0 e 1, e eleva ele a um exponente
-void ImagePow(Image *image, float expo) {
-    uint8_t *image_data = (uint8_t *)image->data;
+void ImagePow(Image* image, float expo) {
+    uint8_t* image_data = (uint8_t*)image->data;
 
     auto lambda = [image_data, expo](int start_pixel, int end_pixel) {
         for (int t = start_pixel; t < end_pixel; t++) {
@@ -132,8 +132,8 @@ void ImagePow(Image *image, float expo) {
 // Realiza uma inversão simples na cor da imagem (pixel = 255 - pixel)
 // Essa função é mais rápida que a função do raylib pq é multithreaded
 // e não faz certos checks (incluindo o de uma imagem ser colorida)
-void ImageColorInvertFast(Image *image) {
-    uint8_t *img_data = (uint8_t *)image->data;
+void ImageColorInvertFast(Image* image) {
+    uint8_t* img_data = (uint8_t*)image->data;
     auto lambda = [img_data](int start_pixel, int end_pixel) {
         for (int pixel = start_pixel; pixel < end_pixel; pixel++) {
             img_data[pixel] = 255 - img_data[pixel];
@@ -143,9 +143,9 @@ void ImageColorInvertFast(Image *image) {
 }
 
 // Gera o gradiente de uma imagem normalizado entre 0 e 1 (0 e 255)
-void ImageNormalizedGradient(Image *image) {
+void ImageNormalizedGradient(Image* image) {
     // não podemos fazer a modificação in-place, uma iteração vai afetar o resultado da outra.
-    uint8_t *grad_data = (uint8_t *)malloc(image->width * image->height);
+    uint8_t* grad_data = (uint8_t*)malloc(image->width * image->height);
 
     auto lambda = [grad_data, image](int start_row, int end_row) {
         for (int y = start_row; y < end_row; y++) {
@@ -166,8 +166,8 @@ void ImageNormalizedGradient(Image *image) {
     image->data = grad_data;
 }
 
-void ImageKernelConvolutionFast(Image *image, Kernel kernel) {
-    uint8_t *img_copy = (uint8_t *)malloc(image->width * image->height * sizeof(uint8_t));
+void ImageKernelConvolutionFast(Image* image, Kernel kernel) {
+    uint8_t* img_copy = (uint8_t*)malloc(image->width * image->height * sizeof(uint8_t));
 
     auto lambda = [kernel, img_copy, image](int start_row, int end_row) {
         int kernel_width = (int)sqrt((double)kernel.size);

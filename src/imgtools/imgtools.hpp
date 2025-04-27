@@ -44,8 +44,8 @@ public:
     Range range_rho;
 
     // Reta (theta,rho) no espaço com maior número de pontos (x,y) associados
-    Line *max;
-    Line *data = nullptr;
+    Line* max;
+    Line* data = nullptr;
 
     int width;
     int height;
@@ -88,14 +88,14 @@ inline float GetDiagonalLength(Image image) {
 }
 
 inline uint8_t GetPixel(Image image, int x, int y) {
-    return ((uint8_t *)image.data)[x + y * image.width];
+    return ((uint8_t*)image.data)[x + y * image.width];
 }
 inline uint8_t GetPixelSafe(Image image, int x, int y) {
     if (static_cast<unsigned>(x) >= static_cast<unsigned>(image.width)
         || static_cast<unsigned>(y) >= static_cast<unsigned>(image.height)) {
         return 0;
     }
-    return ((uint8_t *)image.data)[x + y * image.width];
+    return ((uint8_t*)image.data)[x + y * image.width];
 }
 
 inline float GetPixelF(Image image, int x, int y) {

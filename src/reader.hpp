@@ -36,12 +36,8 @@ constexpr std::string caralho() {
 
 struct Reading {
     std::vector<Header> headers = {
-        {"Nome", caralho()},
-        {"Escola", caralho()},
-        {"Modalidade", caralho()},
-        {"Fase", caralho()},
-        {"Data", caralho()},
-        {"Inscrição", caralho()},
+        {"Nome", caralho()}, {"Escola", caralho()}, {"Modalidade", caralho()},
+        {"Fase", caralho()}, {"Data", caralho()},   {"Inscrição", caralho()},
     };
     std::string barcode_string = "";
     std::array<Vector2, 4> reading_rectangle;
@@ -134,12 +130,12 @@ struct Reader {
 
     Reading read(Image image);
     void draw_reading(Reading reading);
-    void image_filter1(Image *image);
-    void image_filter2(Image *image);
-    void image_filter_hough(Image *image);
+    void image_filter1(Image* image);
+    void image_filter2(Image* image);
+    void image_filter_hough(Image* image);
     float read_area(Image image, int x, int y);
     std::vector<Item> read_item_group(ItemGroup item_group,
                                       std::array<Vector2, 4> reading_rectangle,
                                       Image image_filtered1, Image image_filtered2);
-    std::array<Vector2, 4> get_reading_rectangle(Image image, std::vector<ReadWarning> *warnings);
+    std::array<Vector2, 4> get_reading_rectangle(Image image, std::vector<ReadWarning>* warnings);
 };

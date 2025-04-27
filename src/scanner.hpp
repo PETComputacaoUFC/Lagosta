@@ -15,7 +15,7 @@ std::vector<std::string> GetScannerNames();
 SANE_Handle GetScanner(std::string name_pattern);
 
 // Returns a pointer to data read from a scanner
-unsigned char *ReadScannerData(SANE_Handle handle);
+unsigned char* ReadScannerData(SANE_Handle handle);
 
 // Reads data from a scanner and converts it into a raylib image
 Image ImageFromScanner(SANE_Handle handle);

@@ -41,8 +41,8 @@ void DoThreaded(std::function<void(int start, int end)> lambda, int elements) {
     for (size_t i = 0; i < threads.size(); i++) { threads[i].join(); }
 }
 
-PixelVector FilterImage(Image *image, std::function<bool(Pixel)> filter) {
-    uint8_t *img_data = (uint8_t *)image->data;
+PixelVector FilterImage(Image* image, std::function<bool(Pixel)> filter) {
+    uint8_t* img_data = (uint8_t*)image->data;
     PixelVector v = {};
 
     for (int y = 0; y < image->height; y++) {
@@ -56,7 +56,7 @@ PixelVector FilterImage(Image *image, std::function<bool(Pixel)> filter) {
 }
 
 PixelVector FilterImageThreshold(Image image, uint8_t threshold) {
-    uint8_t *img_data = (uint8_t *)image.data;
+    uint8_t* img_data = (uint8_t*)image.data;
     PixelVector v = {};
 
     for (int y = 0; y < image.height; y++) {
@@ -88,19 +88,19 @@ int CountPixelsInLine(PixelVector pixel_vector, float const theta, float const r
 // Constrói o espaço parâmetral de Hough
 void HoughParameterSpace::build_space(PixelVector pixel_vector, float threshold) {
     if (data != nullptr) { free(data); }
-    data = (Line *)malloc(sizeof(Line) * width * height);
+    data = (Line*)malloc(sizeof(Line) * width * height);
 
     // O cálculo de máximo global não é trivial de ser feito em threads.
     // É melhor realizar cálculos de máximo local e depois juntar tudo.
     std::mutex list_lock;
-    std::vector<Line *> max_list{};
+    std::vector<Line*> max_list{};
 
     // Função lambda de processamento do espaço parametral
     auto lambda = [this, pixel_vector, threshold, &max_list, &list_lock](int start_row,
                                                                          int end_row) {
         float rho = range_rho.start + range_rho.step * start_row;
         // Começa assumindo que o máximo local é o primeiro elemento do array local.
-        Line *local_max = data + start_row * width;
+        Line* local_max = data + start_row * width;
 
         for (int i = start_row; i < end_row; i++) {
             float theta = range_theta.start;
@@ -126,7 +126,7 @@ void HoughParameterSpace::build_space(PixelVector pixel_vector, float threshold)
 
     // Calcula o máximo global após o processamento
     max = data;  // Começa assumindo que o máximo global é o primeiro elemento do array.
-    for (Line *local_max : max_list) {
+    for (Line* local_max : max_list) {
         if (local_max->count > max->count) { max = local_max; }
     }
 }
@@ -134,7 +134,7 @@ void HoughParameterSpace::build_space(PixelVector pixel_vector, float threshold)
 // Cria uma imagem grayscale com base no espaço parametral.
 // branco = muitos pixels na linha; preto = poucos pixels
 Image HoughParameterSpace::image() {
-    uint8_t *img_data = (uint8_t *)malloc(width * height);
+    uint8_t* img_data = (uint8_t*)malloc(width * height);
     float max_count = (float)max->count;
 
     for (int line = 0; line < width * height; line++) {
