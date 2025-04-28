@@ -61,7 +61,7 @@ void UIReader::fs_updated() {
 
 
 void UIReader::draw() {
-    std::vector<FSEntry> fs_entries = parent->sidebar.entries;
+    std::vector<FSEntry>& fs_entries = parent->sidebar.entries;
     int selected_entry = parent->sidebar.selected_entry;
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {4, 4});
