@@ -1,5 +1,9 @@
 #include "reader.hpp"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
+
 #include "ZXing/ReadBarcode.h"
 #include "imgtools/filters.hpp"
 #include "imgtools/imgtools.hpp"
@@ -244,22 +248,19 @@ void Reader::draw_reading(Reading reading) {
 
     int item_counter = 0;
     for (ItemGroup ig : reading_box.item_groups) {
-        for (int i = 0; i < ig.num_items; i++) {
-            Item item = {-1, std::vector<float>(ig.num_choices)};
-
+        for (size_t i = 0; (int)i < std::min(ig.num_items, (int)reading.items.size()); i++) {
             float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
-            for (int c = 0; c < ig.num_choices; c++) {
+            Item item = reading.items[item_counter];
+            for (size_t c = 0; c < (size_t)ig.num_choices; c++) {
                 float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
                 Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
                 Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
 
                 Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
                 char text[6];
-                sprintf(text, "%.2f", reading.items[item_counter].choice_readings[c]);
+                sprintf(text, "%.2f", item.choice_readings[c]);
                 DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
-                DrawCircleV(
-                    center, read_radius,
-                    reading.items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
+                DrawCircleV(center, read_radius, item.choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
             }
             item_counter++;
         }
@@ -267,10 +268,9 @@ void Reader::draw_reading(Reading reading) {
 
     item_counter = 0;
     for (ItemGroup hg : reading_box.header_groups) {
-        for (int i = 0; i < hg.num_items; i++) {
-            Item item = {-1, std::vector<float>(hg.num_choices)};
-
+        for (size_t i = 0; (int)i < std::min(hg.num_items, (int)reading.header_items.size()); i++) {
             float y_lerp_amount = hg.item01a_y + hg.item_spacing_y * (float)i;
+            Item item = reading.header_items[item_counter];
             for (int c = 0; c < hg.num_choices; c++) {
                 float x_lerp_amount = hg.item01a_x + hg.item_spacing_x * (float)c;
                 Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
@@ -278,11 +278,9 @@ void Reader::draw_reading(Reading reading) {
 
                 Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
                 char text[6];
-                sprintf(text, "%.2f", reading.header_items[item_counter].choice_readings[c]);
+                sprintf(text, "%.2f", item.choice_readings[c]);
                 DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
-                DrawCircleV(center, read_radius,
-                            reading.header_items[item_counter].choice == ITEMS_STR[c] ? ORANGE_T
-                                                                                      : PURPLE_T);
+                DrawCircleV(center, read_radius, item.choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
             }
             item_counter++;
         }

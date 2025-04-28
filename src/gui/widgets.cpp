@@ -1,4 +1,6 @@
-#include <utility>
+#include <algorithm>
+#include <cstring>
+#include <string>
 
 #include "ImGuiFileDialog.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -104,43 +106,67 @@ bool InputTextTitle(const char* label, char* buf, size_t buf_size) {
     return b;
 }
 
-static char cu[101] = "";
-std::pair<bool, std::string> DirectoryChooser() {
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {5, 2});
+bool FileDialogBar(ImGuiFileDialog* instance, char* buf, size_t max_size, bool reload_button, const std::string& vKey,
+                   const std::string& vTitle, const char* vFilters) {
+    bool updated = false;
+    if (!instance) {
+        instance = ImGuiFileDialog::Instance();
+    }
 
     ImVec2 ws = ImGui::GetContentRegionAvail();
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {5, 2});
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0, 0});
-    if (ImGui::Button("\uf07b")) {
+
+    bool button_pressed = false;
+    if (vKey == "ChooseFileDlgKey") {
+        button_pressed = ImGui::Button("\uf15b");
+    } else {
+        button_pressed = ImGui::Button("\uf07b");
+    }
+    if (button_pressed) {
         IGFD::FileDialogConfig config;
         config.path = ".";
         config.flags = ImGuiFileDialogFlags_DisableCreateDirectoryButton
                      | ImGuiFileDialogFlags_DisableQuickPathSelection | ImGuiFileDialogFlags_Modal;
-        ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDlgKey", "Choose Directory", nullptr,
-                                                config);
+                     instance->OpenDialog(vKey, vTitle, vFilters, config);
     }
+
     ImVec2 bs = ImGui::GetItemRectSize();
+    ImGui::SetNextWindowSize({ws.x - bs.x - (reload_button * 25), bs.y});
+
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(ws.x - bs.x * 2 - 1);
-    ImGui::InputText("##51231", cu, 101);
-    ImGui::SameLine();
-    ImGui::Button("\uf2f9");
-    ImGui::PopStyleVar();
+    ImGui::BeginChild("##DirectoryChooserPath", {}, ImGuiChildFlags_FrameStyle);
+    ImGui::Text("%s", buf);
+    ImGui::EndChild();
+
+    if (reload_button) {
+        ImGui::SameLine();
+        updated = ImGui::Button("\uf2f9"); // Reload button
+    }
+
+    ImGui::PopStyleVar();  // Item Spacing
 
     // FileDialog
-    std::string path = "";
-    bool update = false;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {4, 2});
-    if (ImGuiFileDialog::Instance()->Display("ChooseDirDlgKey", ImGuiWindowFlags_NoCollapse,
-                                             {600, 400})) {  // => will show a dialog
-        if (ImGuiFileDialog::Instance()->IsOk()) {
-            path = ImGuiFileDialog::Instance()->GetCurrentPath();
-            update = true;
+    if (instance->Display(vKey, ImGuiWindowFlags_NoCollapse, {600, 400})) {
+        if (instance->IsOk()) {
+            std::string path;
+            if (vKey == "ChooseFileDlgKey") {
+                path = instance->GetFilePathName(); // Get file path
+            } else {
+                path = instance->GetCurrentPath(); // Get directory
+            }
+            printf("%s\n", path.c_str());
+            size_t size_to_copy = std::min(max_size - 1, path.size());
+            memcpy(buf, path.c_str(), size_to_copy);
+            buf[size_to_copy] = '\0';
+            updated = true;
         }
 
-        ImGuiFileDialog::Instance()->Close();
+        instance->Close();
     }
     ImGui::PopStyleVar(3);
 
-    return make_pair(update, path);
+    return updated;
 }

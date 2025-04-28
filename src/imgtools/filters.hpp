@@ -10,9 +10,11 @@ struct Kernel {
     std::vector<float> data;
     size_t size;
 
-    inline Kernel(std::vector<float> kernel_data, size_t kernel_size) : data(kernel_data), size(kernel_size) {}
+    inline Kernel(std::vector<float> kernel_data, size_t kernel_size)
+        : data(kernel_data), size(kernel_size) {}
 
-    inline Kernel(float all, size_t kernel_size) : data(std::vector<float>(kernel_size)), size(kernel_size) {
+    inline Kernel(float all, size_t kernel_size)
+        : data(std::vector<float>(kernel_size)), size(kernel_size) {
         for (size_t i = 0; i < kernel_size; i++) { data[i] = all; }
     };
 

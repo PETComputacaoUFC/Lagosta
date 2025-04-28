@@ -1,6 +1,9 @@
 #include "gui.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <functional>
 
 #include "ImGuiFileDialog.h"
 #include "imgui.h"
@@ -58,8 +61,22 @@ void UserInterface::update_style() {
     style.TabRounding = 0;
     // using textures for anti-aliased lines makes them pretty rough
     style.AntiAliasedLinesUseTex = false;
-    // File dialog icons
-    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, "", {1, 1, 1, 1}, "\uf07b");
+
+    /* ===== FILE DIALOG ICONS ===== */
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, "", {1, 1, 1, 1},
+                                              "\uf07b");  // folder
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeFile, "", {1, 1, 1, 1},
+                                              "\uf15c");  // file
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtention, ".jpg", {1, 1, 1, 1},
+                                              "\uf03e");  // image
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtention, ".jpeg", {1, 1, 1, 1},
+                                              "\uf03e");  // image
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtention, ".png", {1, 1, 1, 1},
+                                              "\uf03e");  // image
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, ".csv", {1, 1, 1, 1},
+                                              "\uf00b");  // table
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, ".json", {1, 1, 1, 1},
+                                              "\uf00b");  // table
 
     // 0.09f, 0.10f, 0.15f, 1.00f
     /* ===== SETTING UP COLORS ===== */
@@ -136,16 +153,138 @@ void UserInterface::update_fs() {
         }
         Image file_img = LoadImage(file_path.c_str());
         ImageFormat(&file_img, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
-        Reading file_reading = reader.read(file_img);
-        fs_entries.push_back({.name = file_path, .image = file_img, .reading = file_reading});
+        fs_entries.push_back({.path = file_path, .image = file_img, .reading = {}});
     }
 
     UnloadDirectoryFiles(files);
+    sort_fs();
     selected_entry = -1;
 }
 
+
+bool UserInterface::entry_has_warnings(const FSEntry& entry) {
+    if (!entry.reading.warnings.empty()) { return true; }
+    // TODO: empty headers
+    // for (Header h : entry.reading.headers) {
+    //     if ((std::string)(h.content.c_str()) == "") { return true; }
+    // }
+    return false;
+}
+
+
+bool UserInterface::entry_has_empty_headers(const FSEntry& entry) {
+    for (Header h : entry.reading.headers) {
+        if ((std::string)(h.content.c_str()) == "") { return true; }
+    }
+    return false;
+}
+
+
+void UserInterface::read_current() {
+    if (selected_entry < 0) { return; }
+    FSEntry& entry = fs_entries[selected_entry];
+    Reading r = reader.read(entry.image);
+    entry.reading = r;
+    update_viewport();
+}
+
+void UserInterface::read_selection() {
+    for (FSEntry& entry : fs_entries) {
+        if (!entry.selected) { continue; }
+        Reading r = reader.read(entry.image);
+        entry.reading = r;
+    }
+    update_viewport();
+}
+
+void UserInterface::read_all() {
+    for (FSEntry& entry : fs_entries) {
+        Reading r = reader.read(entry.image);
+        entry.reading = r;
+    }
+    update_viewport();
+}
+
+
+void UserInterface::sort_fs() {
+    std::string current_path;
+    if (selected_entry != -1) { current_path = fs_entries[selected_entry].path; }
+    if (_entry_order_ascending) {
+        std::sort(fs_entries.begin(), fs_entries.end(), std::less<FSEntry>());
+    } else {
+        std::sort(fs_entries.begin(), fs_entries.end(), std::greater<FSEntry>());
+    }
+    if (selected_entry != -1) {
+        for (size_t e = 0; e < fs_entries.size(); e++) {
+            if (current_path == fs_entries[e].path) {
+                selected_entry = e;
+                break;
+            }
+        }
+    }
+}
+
+
+void UserInterface::delete_selected_files() {
+    for (int e = fs_entries.size() - 1; e > -1; e--) {
+        FSEntry& file = fs_entries[e];
+        if (file.selected) {
+            if (remove(file.path.c_str()) != 0) {
+                printf("Error deleting file.\n");
+            } else {
+                if (e == selected_entry) {
+                    selected_entry--;
+                    update_viewport();
+                }
+                fs_entries.erase(fs_entries.begin() + e);
+                printf("File successfully deleted.\n");
+            }
+        }
+    }
+}
+
+
+void UserInterface::check_all_entries() {
+    bool check = _all_entries_checked;
+    for (FSEntry& entry : fs_entries) {
+        entry.checked = check;
+        entry.reading.warnings.clear();
+    }
+};
+
+void UserInterface::select_all_entries() {
+    bool check = _all_entries_selected;
+    for (FSEntry& entry : fs_entries) { entry.selected = check; }
+}
+
+void UserInterface::update_all_checked() {
+    bool check = true;
+    for (FSEntry& entry : fs_entries) {
+        if (!entry.checked) {
+            check = false;
+            break;
+        }
+    }
+    _all_entries_checked = check;
+}
+
+void UserInterface::update_all_selected() {
+    bool check = true;
+    for (FSEntry& entry : fs_entries) {
+        if (!entry.selected) {
+            check = false;
+            break;
+        }
+    }
+    _all_entries_selected = check;
+}
+
+
 UserInterface::UserInterface() : fs_entries({}), reader(Reader{}) {
+    _scans_directory.resize(UI_PATH_MAX_SIZE);
+    _participant_table_path.resize(UI_PATH_MAX_SIZE);
+    _answers_table_path.resize(UI_PATH_MAX_SIZE);
     update_style();
     update_fs();
-    draw_viewport();
+    update_viewport();
 }
