@@ -26,7 +26,7 @@ bool FileDialogBar(ImGuiFileDialog* instance, char* buf, size_t max_size, bool r
 
 struct UserInterface {
 private:
-    static void update_style();
+    void update_style();
     
     void draw_sidebar();
     void draw_reader();
@@ -63,6 +63,8 @@ private:
     ImGuiFileDialog _answers_file_dialog_instance;
 
     RenderTexture2D _viewport = LoadRenderTexture(1264, 1760);
+
+    ImFont* monospace_font;
 
 public:
     std::vector<FSEntry> fs_entries;

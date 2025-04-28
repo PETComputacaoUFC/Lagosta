@@ -31,8 +31,11 @@ void UserInterface::update_style() {
     ImGuiIO& io = ImGui::GetIO();
     float size = 16;
     if (!IsWindowState(FLAG_WINDOW_HIGHDPI)) { size *= GetWindowScaleDPI().y; }
+    // font-awesome
     io.Fonts->AddFontFromFileTTF("resources/fonts/fa-solid-900.ttf", size, &icons_config,
                                  icons_ranges);
+    // monospace font
+    monospace_font = io.Fonts->AddFontFromFileTTF("resources/fonts/Inconsolata-Regular.ttf", 16.0f);
 
     /* ===== SETTING UP STYLE ===== */
     ImGuiStyle& style = ImGui::GetStyle();

@@ -10,8 +10,8 @@
 
 #define CATPPUCCIN_PEACH  (ImVec4){0.99f, 0.39f, 0.04f, 1.00f}
 #define CATPPUCCIN_YELLOW (ImVec4){0.87f, 0.56f, 0.11f, 1.00f}
-#define CATPPUCCIN_GREEN (ImVec4){0.250f, 0.627f, 0.169f, 1.000f}
-#define CATPPUCCIN_RED (ImVec4){0.8235f, 0.0588f, 0.2235f, 1.0000f}
+#define CATPPUCCIN_GREEN  (ImVec4){0.250f, 0.627f, 0.169f, 1.000f}
+#define CATPPUCCIN_RED    (ImVec4){0.8235f, 0.0588f, 0.2235f, 1.0000f}
 
 
 
@@ -55,7 +55,7 @@ void UserInterface::draw() {
         if (ImGui::BeginTabBar("MainTabBar")) {
             if (ImGui::BeginTabItem("Leitor")) { ImGui::EndTabItem(); }
             if (ImGui::BeginTabItem("Scanner")) { ImGui::EndTabItem(); }
-            if (ImGui::BeginTabItem("Gerador")) { ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem("Editor")) { ImGui::EndTabItem(); }
             ImGui::EndTabBar();
         }
         ImGui::EndMenuBar();
@@ -213,7 +213,50 @@ void UserInterface::draw_reader() {
         ImGui::PopItemWidth();
 
         ImGui::SeparatorText("Gabarito");
+        ImGui::PushFont(monospace_font);
         ImGui::Text("Gabarito: %s", reading.get_answer_string().c_str());
+        for (size_t i = 0; i < reading.items.size(); i++) {
+            Item &item = reading.items[i];
+            int c = 0;
+            if (item.choice == 'a') { c = 0; }
+            if (item.choice == 'b') { c = 1; }
+            if (item.choice == 'c') { c = 2; }
+            if (item.choice == 'd') { c = 3; }
+            if (item.choice == 'e') { c = 4; }
+            if (item.choice == '0') { c = 5; }
+            if (item.choice == 'X') { c = 6; }
+            ImGui::PushID(i);
+            // Combo box with a label and our list of items.
+            static const char* items[] = { "a", "b", "c", "d", "e", "0", "X" };
+            char preview[2] = "";
+            sprintf(preview, "%c", item.choice);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {8, 2});
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0,0});
+            ImGui::Text("%02zu",i);
+            ImGui::SameLine();
+            if (ImGui::BeginCombo("", preview, ImGuiComboFlags_WidthFitPreview | ImGuiComboFlags_NoArrowButton)) {
+                // Display selectable items
+                for (int n = 0; n < IM_ARRAYSIZE(items); n++) {
+                    bool isSelected = (c == n);
+                    if (ImGui::Selectable(items[n], isSelected)) { c = n; }
+                    if (isSelected) { ImGui::SetItemDefaultFocus(); }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::PopStyleVar(4);
+            item.choice = ("abcde0X")[c];
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::Spacing();
+            if (!(i % 10 == 9 || i == reading.items.size())) {
+                ImGui::SameLine();
+            }
+        }
+        ImGui::PopFont();
+
+        ImGui::SeparatorText("Diagnóstico");
         for (size_t r = 0; r < reading.warnings.size(); r++) {
             ReadWarning warning = reading.warnings[r];
             ImGui::PushID(r);
