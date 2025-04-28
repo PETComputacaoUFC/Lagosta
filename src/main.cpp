@@ -1,5 +1,5 @@
 #include "gui/gui.hpp"
-#include "imgui.h"
+// #include "imgui.h"
 #include "raylib.h"
 #include "rlImGui.h"
 
@@ -16,7 +16,9 @@ int main() {
 
     rlImGuiSetup(true);
 
-    UserInterface ui{};
+    UIElement* reader = new UIReader;
+    UIWindow ui = UIWindow();
+    ui.add_tab(reader);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -30,6 +32,7 @@ int main() {
         EndDrawing();
     }
 
+    // delete reader;
     rlImGuiShutdown();
     CloseWindow();
     return 0;

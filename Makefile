@@ -2,18 +2,14 @@
 CXX := g++
 CXXFLAGS += -Wall -Wextra -Wno-missing-field-initializers \
 		 	-Iinclude -std=c++20
-ifeq ($(DEBUG),TRUE)
-	CXXFLAGS += -g
-else
-	CXXFLAGS += -O2
-endif
 
 LDFLAGS := -Llib -lraylib -lZXing
 OS_LDFLAGS := -lGL -lm -lpthread -ldl -lrt -lX11 -lsane
 
 SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp \
-		   ./src/imgtools/imgtools.cpp ./src/scanner.cpp ./src/gui/gui.cpp \
-		   ./src/gui/draw.cpp ./src/gui/widgets.cpp
+		   ./src/imgtools/imgtools.cpp ./src/scanner.cpp ./src/gui/filesystem.cpp \
+		   ./src/gui/reader.cpp ./src/gui/styling.cpp ./src/gui/widgets.cpp  \
+		   ./src/gui/window.cpp
 DEPS_SOURCES := ./deps/imgui/imgui.cpp ./deps/imgui/imgui_draw.cpp \
 		   ./deps/imgui/imgui_tables.cpp ./deps/imgui/imgui_widgets.cpp \
 		   ./deps/imgui/imgui_demo.cpp ./deps/rlImGui.cpp ./deps/ImGuiFileDialog/ImGuiFileDialog.cpp
@@ -26,6 +22,16 @@ BUILD_DIRS := $(sort $(dir $(OBJECTS))) $(sort $(dir $(DEPS_OBJECTS))) $(dir $(O
 
 CREATE_DIR = mkdir -p $(BUILD_DIRS)
 CLEAN = rm -rf $(OBJECTS) $(OUTPUT) ./build/lagosta
+
+# debug flags etc.
+ifeq ($(SANITIZE),TRUE)
+	CXXFLAGS += -fsanitize=address
+endif
+ifeq ($(DEBUG),TRUE)
+	CXXFLAGS += -g
+else
+	CXXFLAGS += -O2
+endif
 
 ############### WINDOWS FLAGS ###############
 ifeq ($(OS),Windows_NT)

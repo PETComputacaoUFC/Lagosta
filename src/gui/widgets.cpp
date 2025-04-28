@@ -1,11 +1,9 @@
+#include "gui.hpp"
+
 #include <algorithm>
 #include <cstring>
 #include <string>
 
-#include "ImGuiFileDialog.h"
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include "gui.hpp"
-#include "imgui.h"
 #include "imgui_internal.h"
 
 // default checkbox but with white square instead of check. ugh.
@@ -106,12 +104,10 @@ bool InputTextTitle(const char* label, char* buf, size_t buf_size) {
     return b;
 }
 
-bool FileDialogBar(ImGuiFileDialog* instance, char* buf, size_t max_size, bool reload_button, const std::string& vKey,
-                   const std::string& vTitle, const char* vFilters) {
+bool FileDialogBar(ImGuiFileDialog* instance, char* buf, size_t max_size, bool reload_button,
+                   const std::string& vKey, const std::string& vTitle, const char* vFilters) {
     bool updated = false;
-    if (!instance) {
-        instance = ImGuiFileDialog::Instance();
-    }
+    if (!instance) { instance = ImGuiFileDialog::Instance(); }
 
     ImVec2 ws = ImGui::GetContentRegionAvail();
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
@@ -129,7 +125,7 @@ bool FileDialogBar(ImGuiFileDialog* instance, char* buf, size_t max_size, bool r
         config.path = ".";
         config.flags = ImGuiFileDialogFlags_DisableCreateDirectoryButton
                      | ImGuiFileDialogFlags_DisableQuickPathSelection | ImGuiFileDialogFlags_Modal;
-                     instance->OpenDialog(vKey, vTitle, vFilters, config);
+        instance->OpenDialog(vKey, vTitle, vFilters, config);
     }
 
     ImVec2 bs = ImGui::GetItemRectSize();
@@ -142,7 +138,7 @@ bool FileDialogBar(ImGuiFileDialog* instance, char* buf, size_t max_size, bool r
 
     if (reload_button) {
         ImGui::SameLine();
-        updated = ImGui::Button("\uf2f9"); // Reload button
+        updated = ImGui::Button("\uf2f9");  // Reload button
     }
 
     ImGui::PopStyleVar();  // Item Spacing
@@ -153,9 +149,9 @@ bool FileDialogBar(ImGuiFileDialog* instance, char* buf, size_t max_size, bool r
         if (instance->IsOk()) {
             std::string path;
             if (vKey == "ChooseFileDlgKey") {
-                path = instance->GetFilePathName(); // Get file path
+                path = instance->GetFilePathName();  // Get file path
             } else {
-                path = instance->GetCurrentPath(); // Get directory
+                path = instance->GetCurrentPath();   // Get directory
             }
             printf("%s\n", path.c_str());
             size_t size_to_copy = std::min(max_size - 1, path.size());

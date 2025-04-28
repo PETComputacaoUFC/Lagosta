@@ -13,6 +13,7 @@ AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortCaseExpressionOnASingleLine: true
 
+SortIncludes: Never
 # AlignArrayOfStructures: Right
 
 AlignTrailingComments:
