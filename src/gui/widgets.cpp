@@ -154,7 +154,7 @@ bool FileDialogBar(ImGuiFileDialog* instance, char* buf, size_t max_size, bool r
                 path = instance->GetCurrentPath();   // Get directory
             }
             printf("%s\n", path.c_str());
-            size_t size_to_copy = std::min(max_size - 1, path.size());
+            size_t size_to_copy = std::min(max_size - 1, path.length());
             memcpy(buf, path.c_str(), size_to_copy);
             buf[size_to_copy] = '\0';
             updated = true;

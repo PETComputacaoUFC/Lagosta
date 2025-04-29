@@ -1,3 +1,4 @@
+#include <cctype>
 #include <cstdio>
 #include <string>
 #include "gui.hpp"
@@ -79,49 +80,55 @@ void UIReader::draw() {
     if (selected_entry > -1) {
         ImGui::PushItemWidth(windowWidth);
         Reading& reading = fs_entries[selected_entry].reading;
+
+        // Input de headers
         for (Header& head : reading.headers) {
-            InputTextTitle(head.field_name.c_str(), head.content.data(), HEADER_CONTENT_MAX_CHARS);
+            std::string upper = head.name;
+            if (head.name.length() > 0) {
+                head.name[0] = toupper(upper[0]);
+            }
+            InputTextTitle(head.name.c_str(), head.content.data(), HEADER_CONTENT_MAX_CHARS);
         }
         ImGui::Spacing();
+        // Código de barras lido
         ImGui::Text("\uf05a  Código de barras: %s", reading.barcode_string.c_str());
         ImGui::PopItemWidth();
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, {0,0});
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, {0, 0});
         ImGui::SeparatorText("Gabarito");
         ImGui::PushFont(parent->monospace_font);
         ImGui::Text("Gabarito: %s", reading.get_answer_string().c_str());
+        // Permite mudar cada item do gabarito com uma combo box
         for (size_t i = 0; i < reading.items.size(); i++) {
             Item& item = reading.items[i];
-            char label[3];
+            char label[21];
             char preview[2];
-            sprintf(label, "%02zu", i);
-            sprintf(preview, "%c", item.choice);
+            sprintf(label, "%02zu", i); // número do item
+            sprintf(preview, "%c", item.choice); // item selecionado
 
             ImGui::SetNextItemWidth(24);
             if (ImGui::BeginCombo(label, preview, ImGuiComboFlags_NoArrowButton)) {
+                // um selectable pra cada opção
                 for (int n = 0; n < IM_ARRAYSIZE(ITEMS_STR) - 1; n++) {
                     bool is_selected = (ITEMS_STR[n] == item.choice);
                     char s_label[2];
                     sprintf(s_label, "%c", ITEMS_STR[n]);
 
-                    if (ImGui::Selectable(s_label, is_selected)) {
-                        item.choice = ITEMS_STR[n];
-                    }
+                    if (ImGui::Selectable(s_label, is_selected)) { item.choice = ITEMS_STR[n]; }
                     if (is_selected) { ImGui::SetItemDefaultFocus(); }
                 }
                 ImGui::EndCombo();
             }
             ImGui::SameLine();
             ImGui::Spacing();
-            if (i % 10 != 9 && i < reading.items.size()) {
-                ImGui::SameLine();
-            }
+            if (i % 10 != 9 && i < reading.items.size()) { ImGui::SameLine(); }
         }
         ImGui::PopFont();
         ImGui::PopStyleVar(2);
 
         ImGui::SeparatorText("Diagnóstico");
+        // Mostra todos os avisos da leitura
         for (size_t r = 0; r < reading.warnings.size(); r++) {
             ReadWarning warning = reading.warnings[r];
             ImGui::PushID(r);

@@ -1,7 +1,9 @@
+#include <cctype>
 #include "gui/gui.hpp"
 // #include "imgui.h"
 #include "raylib.h"
 #include "rlImGui.h"
+#include "rapidcsv.h"
 
 int main() {
     SetTraceLogLevel(LOG_WARNING);
@@ -14,11 +16,27 @@ int main() {
     SetTargetFPS(144);
     SetExitKey(KEY_NULL);
 
-    rlImGuiSetup(true);
+    // auto doc = rapidcsv::Document("resources/data/participantes_teste.csv", rapidcsv::LabelParams(-1, 0));
+    // std::vector<std::string> participant_data = doc.GetRow<std::string>("0");
 
-    UIElement* reader = new UIReader;
+//     Image img = LoadImage("resources/scans_teste_oci/base.png");
+//     Reader reader{.data_table = rapidcsv::Document("resources/data/participantes_teste.csv",
+//                                                    rapidcsv::LabelParams(0, 0))};
+// 
+//     Reading reading = reader.read(img);
+// 
+//     for (Header h : reading.headers) {
+//         printf("%s: %s\n", h.name.c_str(), h.content.c_str());
+//     }
+
+    Reader r{.data_table = rapidcsv::Document("resources/data/participantes_teste.csv",
+                                                   rapidcsv::LabelParams(0, 0))};
+
+    rlImGuiSetup(true);
+    UIReader reader = UIReader();
+    reader.reader = r;
     UIWindow ui = UIWindow();
-    ui.add_tab(reader);
+    ui.add_tab(&reader);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -26,7 +44,6 @@ int main() {
 
         ui.draw();
         // ImGui::ShowDemoWindow();
-        // ImGui::SetWindowFocus("Dear ImGui Demo");
 
         rlImGuiEnd();
         EndDrawing();

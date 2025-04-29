@@ -9,7 +9,7 @@ AlignOperands: AlignAfterOperator
 BreakBeforeBinaryOperators: NonAssignment
 AlignConsecutiveMacros: Consecutive
 
-AllowShortBlocksOnASingleLine: true
+# AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortCaseExpressionOnASingleLine: true
 

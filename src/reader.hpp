@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "rapidcsv.h"
 #include "raylib.h"
 
 enum ReadMode {
@@ -24,26 +25,18 @@ struct Item {
 
 #define HEADER_CONTENT_MAX_CHARS 101
 struct Header {
-    std::string field_name;
+    std::string name;
     std::string content;
 };
 
-constexpr std::string caralho() {
-    std::string c = "";
-    c.resize(101);
-    return c;
-}
-
 struct Reading {
-    std::vector<Header> headers = {
-        {"Nome", caralho()}, {"Escola", caralho()}, {"Modalidade", caralho()},
-        {"Fase", caralho()}, {"Data", caralho()},   {"Inscrição", caralho()},
-    };
+    std::vector<Header> headers;
     std::string barcode_string = "";
     std::array<Vector2, 4> reading_rectangle;
     std::vector<ReadWarning> warnings;
     std::vector<Item> items;         // questões
     std::vector<Item> header_items;  // itens do cabeçalho
+
     inline std::string get_answer_string() {
         std::string answer_string;
         for (Item item : items) { answer_string.push_back(item.choice); }
@@ -119,6 +112,8 @@ const ReadingBox OCI_READING_BOX = {
 struct Reader {
     ReadMode read_mode = SAMPLE_CIRCLE;
     ReadingBox reading_box = OCI_READING_BOX;
+
+    rapidcsv::Document data_table;
 
     int read_radius = 7;           // radius around the center of the item the reader will scan
     float area_threshold = 0.5f;   // threshold that defines if a choice is considered as marked

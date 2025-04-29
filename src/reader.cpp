@@ -3,10 +3,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
+#include <string>
+#include <format>
 
 #include "ZXing/ReadBarcode.h"
 #include "imgtools/filters.hpp"
 #include "imgtools/imgtools.hpp"
+#include "rapidcsv.h"
 #include "raylib.h"
 #include "raymath.h"
 
@@ -47,9 +50,11 @@ Reading Reader::read(Image image) {
     Reading reading{};
     reading.items.reserve(20);
 
+    // Trying to identify the reading rectangle
     std::array<Vector2, 4> reading_rectangle = get_reading_rectangle(grayscale, &warnings);
     reading.reading_rectangle = reading_rectangle;
-    /* ==== READING BARCODE ==== */
+
+    // Reading barcode
     if (reading_box.barcode_height != 0 && reading_box.barcode_width != 0) {
         // this reads the image so fast we don't even need to crop it lol
         ZXing::ImageView barcode_image_view((uint8_t*)grayscale.data, grayscale.width,
@@ -61,7 +66,35 @@ Reading Reader::read(Image image) {
                                            .setBinarizer(ZXing::Binarizer::FixedThreshold);
         ZXing::Barcode barcode = ZXing::ReadBarcode(barcode_image_view, options);
         reading.barcode_string = barcode.text();
-        if (reading.barcode_string.empty()) { warnings.push_back(BARCODE_NOT_FOUND); }
+        if (reading.barcode_string.empty()) {
+            warnings.push_back(BARCODE_NOT_FOUND);
+        }
+    }
+
+    // Getting headers from our data table
+    std::vector<std::string> headers;
+    if (data_table.GetColumnCount() > 0) {
+        headers = data_table.GetColumnNames();
+        headers.push_back(data_table.GetColumnName(-1)); // coluna de ID
+    }
+    for (std::string name : headers) {
+        reading.headers.push_back({.name = name, .content = ""});
+    }
+
+    if (reading.barcode_string.length() > 2) {
+        // pula os primeiros 2 caracteres: modalidade + fase (o resto é o ID)
+        char* raw_id = reading.barcode_string.data() + 2;
+        // converte a string de ID alinhada com zeros pra uma com o ID puro
+        std::string id = std::format("{}", strtol(raw_id, nullptr, 10));
+        std::vector<std::string> participant_data;
+        try {
+            participant_data = data_table.GetRow<std::string>(id);
+            reading.headers[reading.headers.size() - 1].content = id;
+        } catch (...) {
+        }
+        for (size_t h = 0; h < participant_data.size(); h++) {
+            reading.headers[h].content = participant_data[h];
+        }
     }
 
     /* ==== READING ITEMS ==== */
@@ -94,7 +127,9 @@ Reading Reader::read(Image image) {
     }
 
     // Emite um aviso se mais de 40% dos itens forem nulos
-    if (null_counter > 0.4 * item_counter) { warnings.push_back(TOO_MANY_NULL_CHOICES); }
+    if (null_counter > 0.4 * item_counter) {
+        warnings.push_back(TOO_MANY_NULL_CHOICES);
+    }
 
     // this actually copies the vector, which is what we want.
     reading.warnings = warnings;
@@ -122,7 +157,9 @@ float Reader::read_area(Image image, int x, int y) {
 
             read_count += 1.0f;
             float pixel = GetPixelFSafe(image, read_coords.x, read_coords.y);
-            if (pixel >= pixel_threshold) { reading += pixel; }
+            if (pixel >= pixel_threshold) {
+                reading += pixel;
+            }
         }
     }
 
@@ -166,7 +203,9 @@ std::vector<Item> Reader::read_item_group(ItemGroup item_group,
         }
 
         // Invalida a questão se os dois itens mais altos tem valores muito próximos.
-        if (abs(choice_value - second_highest) <= double_mark_threshold) { choice_id = 'X'; }
+        if (abs(choice_value - second_highest) <= double_mark_threshold) {
+            choice_id = 'X';
+        }
 
         item.choice = choice_id;
         items.push_back(item);
@@ -217,7 +256,9 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
         Line line_v = max_v1.count > max_v2.count ? max_v1 : max_v2;
 
         // our threshold for imprecision is 6 countings or less.
-        if (line_h.count <= 6 || line_v.count <= 6) { imprecise = true; }
+        if (line_h.count <= 6 || line_v.count <= 6) {
+            imprecise = true;
+        }
         // printf("%d > line_h: %d | line_v: %d\n", block_counter, line_h.count, line_v.count);
 
         Vector2 intersection = IntersectionPoint(line_h, line_v);
@@ -230,7 +271,9 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
         block_counter++;
     }
 
-    if (imprecise && warnings != nullptr) { warnings->push_back(IMPRECISE_READING_RECTANGLE); }
+    if (imprecise && warnings != nullptr) {
+        warnings->push_back(IMPRECISE_READING_RECTANGLE);
+    }
 
     return rectangle;
 }
@@ -244,7 +287,9 @@ const Color RED_T{230, 41, 55, 196};       // Red with transparency
 // Desenha o output de uma leitura na tela
 void Reader::draw_reading(Reading reading) {
     std::array<Vector2, 4> reading_rectangle = reading.reading_rectangle;
-    for (Vector2 corner : reading_rectangle) { DrawCircleV(corner, 5.0f, RED_T); }
+    for (Vector2 corner : reading_rectangle) {
+        DrawCircleV(corner, 5.0f, RED_T);
+    }
 
     int item_counter = 0;
     for (ItemGroup ig : reading_box.item_groups) {
