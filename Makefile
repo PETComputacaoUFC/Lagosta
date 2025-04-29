@@ -12,7 +12,8 @@ SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp \
 		   ./src/gui/window.cpp
 DEPS_SOURCES := ./deps/imgui/imgui.cpp ./deps/imgui/imgui_draw.cpp \
 		   ./deps/imgui/imgui_tables.cpp ./deps/imgui/imgui_widgets.cpp \
-		   ./deps/imgui/imgui_demo.cpp ./deps/rlImGui.cpp ./deps/ImGuiFileDialog/ImGuiFileDialog.cpp
+		   ./deps/imgui/imgui_demo.cpp ./deps/rlImGui.cpp ./deps/ImGuiFileDialog.cpp \
+		   ./deps/pugixml.cpp
 
 OBJECTS := $(patsubst ./src/%.cpp, ./build/src/%.o, $(SOURCES))
 DEPS_OBJECTS := $(patsubst ./deps/%.cpp, ./build/deps/%.o, $(DEPS_SOURCES))

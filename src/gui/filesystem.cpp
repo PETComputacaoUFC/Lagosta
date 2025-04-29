@@ -4,6 +4,7 @@ UIFilesystem::UIFilesystem() {
     directory = "resources/scans_teste_oci";
     directory.resize(UI_PATH_MAX_SIZE);
     reload_fs();
+    selected_entry = 1;
 }
 
 bool UIFilesystem::check_all() {
