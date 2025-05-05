@@ -3,3 +3,7 @@ bin/*
 build/
 build/*
 .vscode/
+
+# Added by cargo
+
+/target

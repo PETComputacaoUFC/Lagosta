@@ -1,84 +1,51 @@
 ############### PROJECT CONFIG ###############
 CXX := g++
-CXXFLAGS += -Wall -Wextra -Wno-missing-field-initializers \
-		 	-Iinclude -std=c++20
 
-LDFLAGS := -Llib -lraylib -lZXing
-OS_LDFLAGS := -lGL -lm -lpthread -ldl -lrt -lX11 -lsane
+CPP_SRC_DIR := cpp/src
+CPP_DEPS_DIR := cpp/deps
+CPP_LIBS_DIR := cpp/lib
+CPP_INCLUDE_DIR := cpp/include
+BUILD_DIR := build
+TARGET := build/Lagosta/lagosta
 
-SOURCES := ./src/main.cpp ./src/reader.cpp ./src/imgtools/filters.cpp \
-		   ./src/imgtools/imgtools.cpp ./src/scanner.cpp ./src/gui/filesystem.cpp \
-		   ./src/gui/reader.cpp ./src/gui/styling.cpp ./src/gui/widgets.cpp  \
-		   ./src/gui/window.cpp
-DEPS_SOURCES := ./deps/imgui/imgui.cpp ./deps/imgui/imgui_draw.cpp \
-		   ./deps/imgui/imgui_tables.cpp ./deps/imgui/imgui_widgets.cpp \
-		   ./deps/imgui/imgui_demo.cpp ./deps/rlImGui.cpp ./deps/ImGuiFileDialog.cpp
+CXXFLAGS := -Wall -Wextra -Wno-missing-field-initializers \
+			-I$(CPP_INCLUDE_DIR) -std=c++20
+LDFLAGS := -L$(CPP_LIBS_DIR) -lraylib -lZXing -lGL -lm -lpthread -ldl -lrt \
+	       -lX11 -lsane
 
-OBJECTS := $(patsubst ./src/%.cpp, ./build/src/%.o, $(SOURCES))
-DEPS_OBJECTS := $(patsubst ./deps/%.cpp, ./build/deps/%.o, $(DEPS_SOURCES))
+SOURCES := $(shell find $(CPP_SRC_DIR) -name "*.cpp")
+DEPS_SOURCES := $(shell find $(CPP_DEPS_DIR) -name "*.cpp")
+# Replace directory prefix and suffix .cpp with .o and prefix with $(BUILD_DIR)/.
+OBJECTS := $(patsubst $(CPP_SRC_DIR)/%.cpp, $(BUILD_DIR)/src/%.o, $(SOURCES))
+DEPS_OBJECTS := $(patsubst $(CPP_DEPS_DIR)/%.cpp, $(BUILD_DIR)/deps/%.o, $(DEPS_SOURCES))
 
-OUTPUT := ./build/lagosta/lagosta
-BUILD_DIRS := $(sort $(dir $(OBJECTS))) $(sort $(dir $(DEPS_OBJECTS))) $(dir $(OUTPUT))
+################ BUILD RULES #################
+all: $(TARGET)
 
-CREATE_DIR = mkdir -p $(BUILD_DIRS)
-CLEAN = rm -rf $(OBJECTS) $(OUTPUT) ./build/lagosta
-
-# debug flags etc.
-ifeq ($(SANITIZE),TRUE)
-	CXXFLAGS += -fsanitize=address
-endif
-ifeq ($(DEBUG),TRUE)
-	CXXFLAGS += -g
-else
-	CXXFLAGS += -O2
-endif
-
-############### WINDOWS FLAGS ###############
-ifeq ($(OS),Windows_NT)
-	IS_WINDOWS := 1
-else
-	UNAME_S := $(shell uname)
-	ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
-		IS_WINDOWS := 1
-	else ifeq ($(findstring MSYS,$(UNAME_S)),MSYS)
-		IS_WINDOWS := 1
-	endif
-endif
-
-ifeq ($(IS_WINDOWS),1) # Flags de compilação no windows
-	OS_CXXFLAGS := -DWINDOWS=true
-	OS_LDFLAGS := -lgdi32 -lwinmm
-	OUTPUT := ./build/lagosta.exe
-
-	# Se NÃO for bash no Windows
-	ifeq (,$(findstring /bin/bash,$(shell echo $$SHELL)))
-		CREATE_DIR := @for %%d in ($(subst /,\, $(BUILD_DIRS))) do @if not exist "%%d" mkdir "%%d"
-		CLEAN := @for %%d in ($(subst /,\, $(OBJECTS) $(OUTPUT))) do @if exist "%%d" del /F /Q "%%d"
-	endif
-endif
-
-CXXFLAGS += $(OS_CXXFLAGS)
-LDFLAGS += $(OS_LDFLAGS)
-############### BUILDING RULES ###############
-.PHONY = all dir run clean
-
-all: $(OUTPUT)
-	cp -r ./resources ./build/lagosta
-
-dir:
-	@$(CREATE_DIR)
-
-run: all
-	@cd $(dir $(OUTPUT)) && ./$(notdir $(OUTPUT))
+run: $(TARGET)
+	@cd $(dir $(TARGET)) && ./$(notdir $(TARGET))
 
 clean:
-	@$(CLEAN)
+	rm -rf $(BUILD_DIR) $(TARGET)
 
-$(OUTPUT): dir | $(OBJECTS) $(DEPS_OBJECTS)
-	$(CXX) $(OBJECTS) $(DEPS_OBJECTS) $(CXXFLAGS) $(LDFLAGS) -o $(OUTPUT)
 
-./build/src/%.o: ./src/%.cpp
+$(TARGET): $(OBJECTS) $(DEPS_OBJECTS)
+	@mkdir -p $(dir $(TARGET))
+	@cp -r resources $(dir $(TARGET))/resources
+	$(CXX) $(LDFLAGS) $^ -o $(TARGET)
+
+# Build cpp source files
+$(BUILD_DIR)/src/%.o: $(CPP_SRC_DIR)/%.cpp | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-./build/deps/%.o: ./deps/%.cpp
+# Build cpp dependencies
+$(BUILD_DIR)/deps/%.o: $(CPP_DEPS_DIR)/%.cpp | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -w -c $< -o $@
+
+# Make sure build directory exists etc.
+$(BUILD_DIR):
+	@mkdir -p $@
+
+.PHONY: all clean run
