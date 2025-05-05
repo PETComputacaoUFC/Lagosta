@@ -2,8 +2,7 @@ bin/
 bin/*
 build/
 build/*
+rust/target
+rust/target/*
+rust/Cargo.lock
 .vscode/
-
-# Added by cargo
-
-/target
