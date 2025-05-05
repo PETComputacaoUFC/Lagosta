@@ -1,5 +1,4 @@
 use std::{fs, path::Path};
-use regex;
 
 pub fn modify_svg(file_name: &str) -> Result<String, std::io::Error> {
     let file_path = Path::new(file_name);
