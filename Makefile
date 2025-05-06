@@ -3,14 +3,13 @@ CXX := g++
 
 CPP_SRC_DIR := cpp/src
 CPP_DEPS_DIR := cpp/deps
-CPP_LIBS_DIR := cpp/lib
 CPP_INCLUDE_DIR := cpp/include
 BUILD_DIR := build
 TARGET := build/Lagosta/lagosta
 
 CXXFLAGS := -Wall -Wextra -Wno-missing-field-initializers \
 			-I$(CPP_INCLUDE_DIR) -std=c++20
-LDFLAGS := -L$(CPP_LIBS_DIR) -lraylib -lZXing -lGL -lm -lpthread -ldl -lrt \
+LDFLAGS := -lraylib -lZXing -lGL -lm -lpthread -ldl -lrt \
 	       -lX11 -lsane
 
 SOURCES := $(shell find $(CPP_SRC_DIR) -name "*.cpp")
