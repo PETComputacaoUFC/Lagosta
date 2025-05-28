@@ -4,3 +4,4 @@ aí ano passado tava eu lá olhando um por um dos empatados
 (tem peso as questões)
 
 TODO: Destructor dos headers e fsentry etc
+TODO: ajeitar as libs de cpp

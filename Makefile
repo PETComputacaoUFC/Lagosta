@@ -3,6 +3,7 @@ CXX := g++
 
 CPP_SRC_DIR := cpp/src
 CPP_DEPS_DIR := cpp/deps
+# CPP_LIB_DIR := cpp/lib
 CPP_INCLUDE_DIR := cpp/include
 BUILD_DIR := build
 TARGET := build/Lagosta/lagosta
@@ -38,7 +39,7 @@ $(BUILD_DIR)/src/%.o: $(CPP_SRC_DIR)/%.cpp | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Build cpp dependencies
+# Build cpp dependencies (-w to silence warnings)
 $(BUILD_DIR)/deps/%.o: $(CPP_DEPS_DIR)/%.cpp | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -w -c $< -o $@
