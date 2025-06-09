@@ -9,7 +9,7 @@ TARGET := build/leitor.so
 
 CXXFLAGS := -Wall -Wextra -Wno-missing-field-initializers \
 			-I$(CPP_INCLUDE_DIR) -std=c++20 -fPIC
-LDFLAGS := -lraylib -lZXing -lGL -lm -lpthread -ldl -lX11
+LDFLAGS := -lraylib -lZXing -lm
 
 SOURCES := $(shell find $(CPP_SRC_DIR) -name "*.cpp")
 # Replace directory prefix and suffix .cpp with .o and prefix with $(BUILD_DIR)/.
