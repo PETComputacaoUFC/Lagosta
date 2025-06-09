@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "rapidcsv.h"
 #include "raylib.h"
 
 enum ReadMode {
@@ -29,21 +28,11 @@ struct Header {
     std::string content;
 };
 
-struct Reading {
-    std::vector<Header> headers;
-    std::string barcode_string = "";
-    std::array<Vector2, 4> reading_rectangle;
-    std::vector<ReadWarning> warnings;
-    std::vector<Item> items;         // questões
-    std::vector<Item> header_items;  // itens do cabeçalho
-
-    inline std::string get_answer_string() {
-        std::string answer_string;
-        for (Item item : items) { answer_string.push_back(item.choice); }
-        answer_string.push_back('|');
-        for (Item header : header_items) { answer_string.push_back(header.choice); }
-        return answer_string;
-    };
+struct ReaderOutput {
+    int erro;
+    int id_prova;
+    int id_participante;
+    char* leitura;
 };
 
 
@@ -113,8 +102,6 @@ struct Reader {
     ReadMode read_mode = SAMPLE_CIRCLE;
     ReadingBox reading_box = OCI_READING_BOX;
 
-    rapidcsv::Document data_table;
-
     int read_radius = 7;           // radius around the center of the item the reader will scan
     float area_threshold = 0.5f;   // threshold that defines if a choice is considered as marked
     float pixel_threshold = 0.4f;  // threshold that defines if a pixel is read as marked
@@ -123,8 +110,8 @@ struct Reader {
 
     int filter2_kernel_radius = 2;       // size of erode/dilate kernel used in filter 2
 
-    Reading read(Image image);
-    void draw_reading(Reading reading);
+    ReaderOutput read(Image image);
+    void draw_reading(ReaderOutput reading);
     void image_filter1(Image* image);
     void image_filter2(Image* image);
     void image_filter_hough(Image* image);

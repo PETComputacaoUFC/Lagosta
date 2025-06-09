@@ -1,15 +1,12 @@
 #include "reader.hpp"
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdio>
+#include <cstring>
 #include <string>
-#include <format>
 
 #include "ZXing/ReadBarcode.h"
 #include "imgtools/filters.hpp"
 #include "imgtools/imgtools.hpp"
-#include "rapidcsv.h"
+
 #include "raylib.h"
 #include "raymath.h"
 
@@ -38,8 +35,7 @@ void Reader::image_filter_hough(Image* image) {
 
 
 
-
-Reading Reader::read(Image image) {
+ReaderOutput Reader::read(Image image) {
     // Assures the image is in grayscale format.
     Image grayscale = image;
     ImageFormat(&grayscale, PIXELFORMAT_UNCOMPRESSED_GRAYSCALE);
@@ -47,12 +43,12 @@ Reading Reader::read(Image image) {
     // we'll store warnings inside the reader's vector, then copie the
     // to the reading in the end.
     std::vector<ReadWarning> warnings;
-    Reading reading{};
-    reading.items.reserve(20);
+    std::string barcode_string;
+    std::vector<Item> items;
 
-    // Trying to identify the reading rectangle
-    std::array<Vector2, 4> reading_rectangle = get_reading_rectangle(grayscale, &warnings);
-    reading.reading_rectangle = reading_rectangle;
+    ReaderOutput reading{.erro = 0, .id_prova = -1, .id_participante = -1};
+
+    items.reserve(20);
 
     // Reading barcode
     if (reading_box.barcode_height != 0 && reading_box.barcode_width != 0) {
@@ -65,74 +61,49 @@ Reading Reader::read(Image image) {
                                            .setTryRotate(false)
                                            .setBinarizer(ZXing::Binarizer::FixedThreshold);
         ZXing::Barcode barcode = ZXing::ReadBarcode(barcode_image_view, options);
-        reading.barcode_string = barcode.text();
-        if (reading.barcode_string.empty()) {
-            warnings.push_back(BARCODE_NOT_FOUND);
+        barcode_string = barcode.text();
+        if (barcode_string.empty()) {
+            reading.erro = 1;
         }
     }
 
-    // Getting headers from our data table
-    std::vector<std::string> headers;
-    if (data_table.GetColumnCount() > 0) {
-        headers = data_table.GetColumnNames();
-        headers.push_back(data_table.GetColumnName(-1)); // coluna de ID
-    }
-    for (std::string name : headers) {
-        reading.headers.push_back({.name = name, .content = ""});
-    }
+    if (barcode_string.length() > 2) {
+        char bufFirst2[3] = {0};
+        std::strncpy(bufFirst2, barcode_string.c_str(), 2);
 
-    if (reading.barcode_string.length() > 2) {
-        // pula os primeiros 2 caracteres: modalidade + fase (o resto é o ID)
-        char* raw_id = reading.barcode_string.data() + 2;
-        // converte a string de ID alinhada com zeros pra uma com o ID puro
-        std::string id = std::format("{}", strtol(raw_id, nullptr, 10));
-        std::vector<std::string> participant_data;
-        try {
-            participant_data = data_table.GetRow<std::string>(id);
-            reading.headers[reading.headers.size() - 1].content = id;
-        } catch (...) {
-        }
-        for (size_t h = 0; h < participant_data.size(); h++) {
-            reading.headers[h].content = participant_data[h];
-        }
+        char bufNext9[10] = {0};
+        std::strncpy(bufNext9, barcode_string.c_str() + 2, 9);
+
+        reading.id_prova = std::strtol(bufFirst2, nullptr, 10);
+        reading.id_participante = std::strtol(bufNext9, nullptr, 10);
     }
 
     /* ==== READING ITEMS ==== */
+
+    // Trying to identify the reading rectangle
+    std::array<Vector2, 4> reading_rectangle = get_reading_rectangle(grayscale, &warnings);
+    if (warnings.size() != 0 && reading.erro != 1) {
+        reading.erro = 2;
+    }
+
     Image image_filtered1 = ImageCopy(grayscale);
     image_filter1(&image_filtered1);
     Image image_filtered2 = ImageCopy(image_filtered1);
     image_filter2(&image_filtered2);
 
-    float item_counter = 0;
-    float null_counter = 0;
     for (ItemGroup ig : reading_box.item_groups) {
         std::vector<Item> ig_items =
             read_item_group(ig, reading_rectangle, image_filtered1, image_filtered2);
         for (Item item : ig_items) {
-            reading.items.push_back(item);
-            null_counter += item.choice == '-' || item.choice == 'X';
-            item_counter++;
+            items.push_back(item);
         }
     }
 
-    /* ==== READING HEADERS ==== */
-    for (ItemGroup hg : reading_box.header_groups) {
-        std::vector<Item> hg_items =
-            read_item_group(hg, reading_rectangle, image_filtered1, image_filtered2);
-        for (Item item : hg_items) {
-            reading.header_items.push_back(item);
-            null_counter += item.choice == '-' || item.choice == 'X';
-            item_counter++;
-        }
-    }
+    std::string answer_string;
+    for (Item item : items) { answer_string.push_back(item.choice); }
+    reading.leitura = (char*) malloc(answer_string.size() * sizeof(char));
+    strcpy(reading.leitura, answer_string.c_str());
 
-    // Emite um aviso se mais de 40% dos itens forem nulos
-    if (null_counter > 0.4 * item_counter) {
-        warnings.push_back(TOO_MANY_NULL_CHOICES);
-    }
-
-    // this actually copies the vector, which is what we want.
-    reading.warnings = warnings;
     UnloadImage(image_filtered1);
     UnloadImage(image_filtered2);
 
@@ -276,58 +247,4 @@ std::array<Vector2, 4> Reader::get_reading_rectangle(Image image,
     }
 
     return rectangle;
-}
-
-
-
-
-const Color ORANGE_T{255, 161, 0, 128};    // Orange with transparency
-const Color PURPLE_T{200, 122, 255, 128};  // Purple with transparency
-const Color RED_T{230, 41, 55, 196};       // Red with transparency
-// Desenha o output de uma leitura na tela
-void Reader::draw_reading(Reading reading) {
-    std::array<Vector2, 4> reading_rectangle = reading.reading_rectangle;
-    for (Vector2 corner : reading_rectangle) {
-        DrawCircleV(corner, 5.0f, RED_T);
-    }
-
-    int item_counter = 0;
-    for (ItemGroup ig : reading_box.item_groups) {
-        for (size_t i = 0; (int)i < std::min(ig.num_items, (int)reading.items.size()); i++) {
-            float y_lerp_amount = ig.item01a_y + ig.item_spacing_y * (float)i;
-            Item item = reading.items[item_counter];
-            for (size_t c = 0; c < (size_t)ig.num_choices; c++) {
-                float x_lerp_amount = ig.item01a_x + ig.item_spacing_x * (float)c;
-                Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
-                Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
-
-                Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-                char text[6];
-                sprintf(text, "%.2f", item.choice_readings[c]);
-                DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
-                DrawCircleV(center, read_radius, item.choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
-            }
-            item_counter++;
-        }
-    }
-
-    item_counter = 0;
-    for (ItemGroup hg : reading_box.header_groups) {
-        for (size_t i = 0; (int)i < std::min(hg.num_items, (int)reading.header_items.size()); i++) {
-            float y_lerp_amount = hg.item01a_y + hg.item_spacing_y * (float)i;
-            Item item = reading.header_items[item_counter];
-            for (int c = 0; c < hg.num_choices; c++) {
-                float x_lerp_amount = hg.item01a_x + hg.item_spacing_x * (float)c;
-                Vector2 v1 = Vector2Lerp(reading_rectangle[0], reading_rectangle[1], x_lerp_amount);
-                Vector2 v2 = Vector2Lerp(reading_rectangle[2], reading_rectangle[3], x_lerp_amount);
-
-                Vector2 center = Vector2Lerp(v1, v2, y_lerp_amount);
-                char text[6];
-                sprintf(text, "%.2f", item.choice_readings[c]);
-                DrawText(text, (int)center.x, (int)center.y, 20, YELLOW);
-                DrawCircleV(center, read_radius, item.choice == ITEMS_STR[c] ? ORANGE_T : PURPLE_T);
-            }
-            item_counter++;
-        }
-    }
 }
